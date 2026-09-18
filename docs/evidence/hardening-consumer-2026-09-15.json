@@ -1,0 +1,302 @@
+[
+  {
+    "fixture": 0,
+    "inputBytes": 14,
+    "outputBytes": 12,
+    "repeatIndex": 0,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.026791,
+      "inferenceMS": 143.73397827148438,
+      "prefillMS": 140.48004150390625,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.081041,
+      "tokenizationMS": 2.198791,
+      "totalMS": 289.8445,
+      "validationMS": 0.0875
+    }
+  },
+  {
+    "fixture": 1,
+    "inputBytes": 44,
+    "outputBytes": 29,
+    "repeatIndex": 0,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.013291,
+      "inferenceMS": 274.04701709747314,
+      "prefillMS": 149.95503425598145,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.020542,
+      "tokenizationMS": 2.0735,
+      "totalMS": 430.6765,
+      "validationMS": 1.935083
+    }
+  },
+  {
+    "fixture": 2,
+    "inputBytes": 87,
+    "outputBytes": 61,
+    "repeatIndex": 0,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.01675,
+      "inferenceMS": 1012.4150514602661,
+      "prefillMS": 150.74193477630615,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.015125,
+      "tokenizationMS": 2.054875,
+      "totalMS": 1171.213209,
+      "validationMS": 0.227167
+    }
+  },
+  {
+    "fixture": 0,
+    "inputBytes": 14,
+    "outputBytes": 12,
+    "repeatIndex": 1,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.009833,
+      "inferenceMS": 154.77991104125977,
+      "prefillMS": 140.68102836608887,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.016083,
+      "tokenizationMS": 1.912209,
+      "totalMS": 306.762791,
+      "validationMS": 0.038542
+    }
+  },
+  {
+    "fixture": 1,
+    "inputBytes": 44,
+    "outputBytes": 29,
+    "repeatIndex": 1,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.01475,
+      "inferenceMS": 285.16900539398193,
+      "prefillMS": 150.72107315063477,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.028875,
+      "tokenizationMS": 2.007625,
+      "totalMS": 441.182917,
+      "validationMS": 0.056666
+    }
+  },
+  {
+    "fixture": 2,
+    "inputBytes": 87,
+    "outputBytes": 61,
+    "repeatIndex": 1,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.020167,
+      "inferenceMS": 999.7080564498901,
+      "prefillMS": 150.22993087768555,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.019958,
+      "tokenizationMS": 2.132458,
+      "totalMS": 1160.47775,
+      "validationMS": 0.157667
+    }
+  },
+  {
+    "fixture": 0,
+    "inputBytes": 14,
+    "outputBytes": 12,
+    "repeatIndex": 2,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.013708,
+      "inferenceMS": 150.57802200317383,
+      "prefillMS": 140.20097255706787,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.018417,
+      "tokenizationMS": 2.08975,
+      "totalMS": 300.718875,
+      "validationMS": 0.043459
+    }
+  },
+  {
+    "fixture": 1,
+    "inputBytes": 44,
+    "outputBytes": 29,
+    "repeatIndex": 2,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.014875,
+      "inferenceMS": 285.0300073623657,
+      "prefillMS": 149.4300365447998,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.017209,
+      "tokenizationMS": 2.169625,
+      "totalMS": 440.84775,
+      "validationMS": 0.055625
+    }
+  },
+  {
+    "fixture": 2,
+    "inputBytes": 87,
+    "outputBytes": 61,
+    "repeatIndex": 2,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.020166,
+      "inferenceMS": 1043.3028936386108,
+      "prefillMS": 150.87902545928955,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.018042,
+      "tokenizationMS": 2.2245,
+      "totalMS": 1203.702917,
+      "validationMS": 0.144834
+    }
+  },
+  {
+    "fixture": 0,
+    "inputBytes": 14,
+    "outputBytes": 12,
+    "repeatIndex": 3,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.010458,
+      "inferenceMS": 148.70905876159668,
+      "prefillMS": 140.1209831237793,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.018208,
+      "tokenizationMS": 1.917084,
+      "totalMS": 301.172458,
+      "validationMS": 0.042667
+    }
+  },
+  {
+    "fixture": 1,
+    "inputBytes": 44,
+    "outputBytes": 29,
+    "repeatIndex": 3,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.014709,
+      "inferenceMS": 288.7519598007202,
+      "prefillMS": 149.8410701751709,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.020375,
+      "tokenizationMS": 2.436875,
+      "totalMS": 444.617792,
+      "validationMS": 0.055125
+    }
+  },
+  {
+    "fixture": 2,
+    "inputBytes": 87,
+    "outputBytes": 61,
+    "repeatIndex": 3,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.020375,
+      "inferenceMS": 1009.922981262207,
+      "prefillMS": 151.34203433990479,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.01925,
+      "tokenizationMS": 2.197875,
+      "totalMS": 1170.31075,
+      "validationMS": 0.148125
+    }
+  },
+  {
+    "fixture": 0,
+    "inputBytes": 14,
+    "outputBytes": 12,
+    "repeatIndex": 4,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.010875,
+      "inferenceMS": 149.00600910186768,
+      "prefillMS": 139.74392414093018,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.028958,
+      "tokenizationMS": 1.882458,
+      "totalMS": 300.840417,
+      "validationMS": 0.043291
+    }
+  },
+  {
+    "fixture": 1,
+    "inputBytes": 44,
+    "outputBytes": 29,
+    "repeatIndex": 4,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.015125,
+      "inferenceMS": 285.53903102874756,
+      "prefillMS": 149.6349573135376,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.019791,
+      "tokenizationMS": 2.257417,
+      "totalMS": 440.81075,
+      "validationMS": 0.054583
+    }
+  },
+  {
+    "fixture": 2,
+    "inputBytes": 87,
+    "outputBytes": 61,
+    "repeatIndex": 4,
+    "status": {
+      "cleaned": {}
+    },
+    "timings": {
+      "budgetMS": 30000,
+      "diffMS": 0.018291,
+      "inferenceMS": 1023.7020254135132,
+      "prefillMS": 149.77598190307617,
+      "preparationMS": 3008.328417,
+      "queueMS": 0.018375,
+      "tokenizationMS": 2.236,
+      "totalMS": 1182.327,
+      "validationMS": 0.130791
+    }
+  }
+]

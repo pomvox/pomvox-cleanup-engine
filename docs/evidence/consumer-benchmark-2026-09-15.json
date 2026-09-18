@@ -1,0 +1,319 @@
+{
+  "kind": "synthetic-consumer-smoke-benchmark",
+  "date": "2026-09-15",
+  "hardware": "Apple M1, 16 GiB RAM",
+  "os": "macOS 15.7.4",
+  "toolchain": "Xcode 26.3 (17C529), Swift 6.2.4",
+  "configuration": "Debug",
+  "network": "denied with sandbox-exec",
+  "modelRevision": "b1f7ac8282ce060e4ad1374cb9a34750e31723c1",
+  "packManifestSHA256": "b18de5147868b8f24b706eeee065236926471ea3156aa69670ec43fa5f15059e",
+  "runtime": "mlx-swift-lm 3.31.4 / MLX 0.31.4 / speculative",
+  "method": "One preparation, 3 fixed synthetic fixtures repeated 5 times sequentially; no concurrent test or model run. All admitted results counted; no quality labels.",
+  "limitations": [
+    "Small smoke workload, not representative dictation or an SLO.",
+    "No STT before requests, no memory or energy measurement, no independent human quality evaluation."
+  ],
+  "runs": [
+    {
+      "fixture": 0,
+      "inputBytes": 14,
+      "outputBytes": 12,
+      "repeatIndex": 0,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.050208,
+        "inferenceMS": 149.46997165679932,
+        "prefillMS": 139.5699977874756,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.084833,
+        "tokenizationMS": 2.118583,
+        "totalMS": 295.132583,
+        "validationMS": 0.085125
+      }
+    },
+    {
+      "fixture": 1,
+      "inputBytes": 44,
+      "outputBytes": 29,
+      "repeatIndex": 0,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.013792,
+        "inferenceMS": 352.3060083389282,
+        "prefillMS": 150.2319574356079,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.030625,
+        "tokenizationMS": 2.240833,
+        "totalMS": 509.814,
+        "validationMS": 2.077458
+      }
+    },
+    {
+      "fixture": 2,
+      "inputBytes": 87,
+      "outputBytes": 61,
+      "repeatIndex": 0,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.020667,
+        "inferenceMS": 1025.9320735931396,
+        "prefillMS": 151.7479419708252,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.018334,
+        "tokenizationMS": 2.142375,
+        "totalMS": 1189.660667,
+        "validationMS": 0.278083
+      }
+    },
+    {
+      "fixture": 0,
+      "inputBytes": 14,
+      "outputBytes": 12,
+      "repeatIndex": 1,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.011125,
+        "inferenceMS": 147.02093601226807,
+        "prefillMS": 146.8290090560913,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.018833,
+        "tokenizationMS": 2.015333,
+        "totalMS": 304.831958,
+        "validationMS": 0.046625
+      }
+    },
+    {
+      "fixture": 1,
+      "inputBytes": 44,
+      "outputBytes": 29,
+      "repeatIndex": 1,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.01375,
+        "inferenceMS": 285.2780818939209,
+        "prefillMS": 150.2310037612915,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.021167,
+        "tokenizationMS": 2.02475,
+        "totalMS": 440.796625,
+        "validationMS": 0.0515
+      }
+    },
+    {
+      "fixture": 2,
+      "inputBytes": 87,
+      "outputBytes": 61,
+      "repeatIndex": 1,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.020125,
+        "inferenceMS": 1004.9669742584229,
+        "prefillMS": 152.23705768585205,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.016208,
+        "tokenizationMS": 2.175417,
+        "totalMS": 1167.040375,
+        "validationMS": 0.157375
+      }
+    },
+    {
+      "fixture": 0,
+      "inputBytes": 14,
+      "outputBytes": 12,
+      "repeatIndex": 2,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.010625,
+        "inferenceMS": 145.48707008361816,
+        "prefillMS": 140.23292064666748,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.024292,
+        "tokenizationMS": 2.198708,
+        "totalMS": 295.941709,
+        "validationMS": 0.045208
+      }
+    },
+    {
+      "fixture": 1,
+      "inputBytes": 44,
+      "outputBytes": 29,
+      "repeatIndex": 2,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.015042,
+        "inferenceMS": 305.3480386734009,
+        "prefillMS": 150.31492710113525,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.0185,
+        "tokenizationMS": 2.394917,
+        "totalMS": 461.745208,
+        "validationMS": 0.0655
+      }
+    },
+    {
+      "fixture": 2,
+      "inputBytes": 87,
+      "outputBytes": 61,
+      "repeatIndex": 2,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.019958,
+        "inferenceMS": 1026.1420011520386,
+        "prefillMS": 150.61700344085693,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.018708,
+        "tokenizationMS": 2.33875,
+        "totalMS": 1186.010166,
+        "validationMS": 0.1495
+      }
+    },
+    {
+      "fixture": 0,
+      "inputBytes": 14,
+      "outputBytes": 12,
+      "repeatIndex": 3,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.011875,
+        "inferenceMS": 150.9319543838501,
+        "prefillMS": 146.93307876586914,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.026167,
+        "tokenizationMS": 2.043167,
+        "totalMS": 306.571958,
+        "validationMS": 0.04975
+      }
+    },
+    {
+      "fixture": 1,
+      "inputBytes": 44,
+      "outputBytes": 29,
+      "repeatIndex": 3,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.013209,
+        "inferenceMS": 278.79297733306885,
+        "prefillMS": 147.8790044784546,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.018334,
+        "tokenizationMS": 1.840333,
+        "totalMS": 431.572167,
+        "validationMS": 0.058333
+      }
+    },
+    {
+      "fixture": 2,
+      "inputBytes": 87,
+      "outputBytes": 61,
+      "repeatIndex": 3,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.017041,
+        "inferenceMS": 1000.2850294113159,
+        "prefillMS": 152.3900032043457,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.016666,
+        "tokenizationMS": 2.038167,
+        "totalMS": 1162.013,
+        "validationMS": 0.139958
+      }
+    },
+    {
+      "fixture": 0,
+      "inputBytes": 14,
+      "outputBytes": 12,
+      "repeatIndex": 4,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.010291,
+        "inferenceMS": 148.89097213745117,
+        "prefillMS": 142.4269676208496,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.021208,
+        "tokenizationMS": 1.954666,
+        "totalMS": 303.028083,
+        "validationMS": 0.045959
+      }
+    },
+    {
+      "fixture": 1,
+      "inputBytes": 44,
+      "outputBytes": 29,
+      "repeatIndex": 4,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.0125,
+        "inferenceMS": 290.9080982208252,
+        "prefillMS": 148.6809253692627,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.017917,
+        "tokenizationMS": 2.1865,
+        "totalMS": 445.225542,
+        "validationMS": 0.041417
+      }
+    },
+    {
+      "fixture": 2,
+      "inputBytes": 87,
+      "outputBytes": 61,
+      "repeatIndex": 4,
+      "status": {
+        "cleaned": {}
+      },
+      "timings": {
+        "budgetMS": 30000,
+        "diffMS": 0.026209,
+        "inferenceMS": 1009.0500116348267,
+        "prefillMS": 151.62599086761475,
+        "preparationMS": 4822.272417,
+        "queueMS": 0.014458,
+        "tokenizationMS": 2.002916,
+        "totalMS": 1167.9005,
+        "validationMS": 0.170708
+      }
+    }
+  ]
+}

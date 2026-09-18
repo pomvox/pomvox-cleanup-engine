@@ -1,0 +1,11 @@
+Network-denied installed-pack validation, 2026-09-15.
+Apple M1, 16 GiB; macOS 15.7.4; Xcode 26.3; Swift 6.2.4; Debug.
+Pinned SimpleWords v3 b1f7ac8282ce060e4ad1374cb9a34750e31723c1.
+15 model/decoder tests passed; zero skips or failures; 24 fixtures in four modes.
+Exact UTF-8 parity, vocabulary isolation, duplicate allocation refusal, expired/pre-cancelled and closed-runtime checks passed.
+The first expanded run exposed dropped emoji scalars in library streaming; raw-token whole-sequence decoding repaired it.
+Below are runtime-only diagnostics, not full SDK benchmarks.
+DIFFERENTIAL mode=library uncached=false fixtures=24 medianMS=762.431583 acceptedDrafts=0
+DIFFERENTIAL mode=greedy uncached=false fixtures=24 medianMS=889.433167 acceptedDrafts=0
+DIFFERENTIAL mode=speculative uncached=false fixtures=24 medianMS=553.795834 acceptedDrafts=184
+DIFFERENTIAL mode=speculative uncached=true fixtures=24 medianMS=1554.6678339999999 acceptedDrafts=184

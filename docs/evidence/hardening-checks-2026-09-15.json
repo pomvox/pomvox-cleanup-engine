@@ -1,0 +1,131 @@
+{
+  "completedChecks": [
+    {
+      "name": "installer",
+      "exitCode": 0,
+      "seconds": 0.4
+    },
+    {
+      "name": "debug",
+      "exitCode": 0,
+      "seconds": 2.517
+    },
+    {
+      "name": "release",
+      "exitCode": 0,
+      "seconds": 2.244
+    },
+    {
+      "name": "lifecycle-1",
+      "exitCode": 0,
+      "seconds": 0.776
+    },
+    {
+      "name": "lifecycle-2",
+      "exitCode": 0,
+      "seconds": 0.718
+    },
+    {
+      "name": "lifecycle-3",
+      "exitCode": 0,
+      "seconds": 0.782
+    },
+    {
+      "name": "lifecycle-4",
+      "exitCode": 0,
+      "seconds": 0.773
+    },
+    {
+      "name": "lifecycle-5",
+      "exitCode": 0,
+      "seconds": 0.724
+    },
+    {
+      "name": "lifecycle-6",
+      "exitCode": 0,
+      "seconds": 0.737
+    },
+    {
+      "name": "lifecycle-7",
+      "exitCode": 0,
+      "seconds": 0.732
+    },
+    {
+      "name": "lifecycle-8",
+      "exitCode": 0,
+      "seconds": 0.768
+    },
+    {
+      "name": "lifecycle-9",
+      "exitCode": 0,
+      "seconds": 0.733
+    },
+    {
+      "name": "lifecycle-10",
+      "exitCode": 0,
+      "seconds": 0.729
+    },
+    {
+      "name": "lifecycle-11",
+      "exitCode": 0,
+      "seconds": 0.735
+    },
+    {
+      "name": "lifecycle-12",
+      "exitCode": 0,
+      "seconds": 0.729
+    },
+    {
+      "name": "lifecycle-13",
+      "exitCode": 0,
+      "seconds": 0.726
+    },
+    {
+      "name": "lifecycle-14",
+      "exitCode": 0,
+      "seconds": 0.725
+    },
+    {
+      "name": "lifecycle-15",
+      "exitCode": 0,
+      "seconds": 0.73
+    },
+    {
+      "name": "lifecycle-16",
+      "exitCode": 0,
+      "seconds": 0.724
+    },
+    {
+      "name": "lifecycle-17",
+      "exitCode": 0,
+      "seconds": 0.735
+    },
+    {
+      "name": "lifecycle-18",
+      "exitCode": 0,
+      "seconds": 0.722
+    },
+    {
+      "name": "lifecycle-19",
+      "exitCode": 0,
+      "seconds": 0.731
+    },
+    {
+      "name": "lifecycle-20",
+      "exitCode": 0,
+      "seconds": 0.767
+    },
+    {
+      "name": "thread",
+      "exitCode": 0,
+      "seconds": 7.291
+    },
+    {
+      "name": "address",
+      "exitCode": 0,
+      "seconds": 2.582
+    }
+  ],
+  "modelTests": "not run; follow docs/testing.md with a pinned installed pack",
+  "scope": "Root SDK validation only. Real-model evidence is recorded separately."
+}

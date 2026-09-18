@@ -1,0 +1,8 @@
+Apple M1, 16 GiB; macOS 15.7.4; Xcode 26.3, Swift 6.2.4; Debug
+Network denied; 15 tests passed, no skips; 16 fixtures match source reference as UTF-8 bytes.
+Vocabulary isolation and duplicate resident allocation checked.
+These per-request runtime medians are diagnostic; no quality or production speed claim.
+DIFFERENTIAL mode=library uncached=false fixtures=16 medianMS=818.02875 acceptedDrafts=0
+DIFFERENTIAL mode=greedy uncached=false fixtures=16 medianMS=933.927625 acceptedDrafts=0
+DIFFERENTIAL mode=speculative uncached=false fixtures=16 medianMS=620.942542 acceptedDrafts=122
+DIFFERENTIAL mode=speculative uncached=true fixtures=16 medianMS=1621.862083 acceptedDrafts=122

@@ -1,0 +1,10 @@
+.build/
+.swiftpm/
+.reference/
+.local/
+.DS_Store
+*.safetensors
+*.xcuserstate
+*.xcodeproj/
+__pycache__/
+*.pyc

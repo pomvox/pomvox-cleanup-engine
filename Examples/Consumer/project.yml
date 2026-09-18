@@ -1,0 +1,42 @@
+name: CleanupConsumer
+options:
+  deploymentTarget:
+    macOS: "14.0"
+packages:
+  PomvoxCleanupMLX:
+    path: ../../Runtime/MLX
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CODE_SIGNING_ALLOWED: NO
+targets:
+  Consumer:
+    type: tool
+    platform: macOS
+    sources:
+      - Sources/Consumer
+      - ../PomvoxAdapter
+    dependencies:
+      - package: PomvoxCleanupMLX
+    settings:
+      base:
+        PRODUCT_NAME: Consumer
+  ModelTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - ../../Runtime/MLX/Tests/PomvoxCleanupMLXTests
+    dependencies:
+      - package: PomvoxCleanupMLX
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+schemes:
+  Consumer:
+    build:
+      targets:
+        Consumer: all
+        ModelTests: [test]
+    test:
+      targets: [ModelTests]
