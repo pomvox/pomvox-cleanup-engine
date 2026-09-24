@@ -19,7 +19,11 @@ class ReleaseExportTests(unittest.TestCase):
             version = (ROOT / 'VERSION').read_text().strip()
             parsed = subprocess.run(['swift', 'package', '--package-path', str(destination), 'dump-package'],
                 check=True, capture_output=True, text=True, timeout=60)
-            self.assertEqual(json.loads(parsed.stdout)['name'], 'PomvoxCleanupMLX')
+            package = json.loads(parsed.stdout)
+            self.assertEqual(package['name'], 'PomvoxCleanupMLX')
+            runtime = next(t for t in package['targets'] if t['name'] == 'PomvoxCleanupMLX')
+            self.assertTrue(any(d.get('product', [])[:2] == ['Tokenizers', 'swift-tokenizers']
+                                for d in runtime['dependencies']))
             self.assertNotIn('path: "../.."', manifest)
             self.assertIn('exact: "' + version + '"', manifest)
             self.assertIn('https://github.com/pomvox/pomvox-cleanup-engine.git', manifest)

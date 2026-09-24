@@ -2,7 +2,7 @@
 
 A local-first Swift SDK for turning dictated text into cleaned text, with explicit outcomes, Unicode-safe edits, provenance and timings. Prepare a verified model pack once and reuse the cleaner across requests.
 
-**Version: 0.1.0-beta.1 — public beta.** The implementation has contract, concurrency, adversarial transport and real-model regression tests. Stable production support still requires the [release gates](docs/testing.md#release-gates), including real Pomvox integration and a reviewed quality corpus. Sub-100ms cleanup is a benchmark target, not a demonstrated capability.
+**Version: 0.1.0-beta.2 — public beta.** The implementation has contract, concurrency, adversarial transport and real-model regression tests. Stable production support still requires the [release gates](docs/testing.md#release-gates), including real Pomvox integration and a reviewed quality corpus. Sub-100ms cleanup is a benchmark target, not a demonstrated capability.
 
 ## What it provides
 
@@ -28,17 +28,17 @@ macOS 14 is the declared deployment minimum; it has not yet been exercised in th
 
 ### 1. Add the package
 
-The root package has no MLX dependency. Local inference is distributed as the standalone [PomvoxCleanupMLX package](https://github.com/pomvox/pomvox-cleanup-mlx), generated from `Runtime/MLX` in this source repository. Add the public runtime repository in Xcode at exact version `0.1.0-beta.1`, or declare:
+The root package has no MLX dependency. Local inference is distributed as the standalone [PomvoxCleanupMLX package](https://github.com/pomvox/pomvox-cleanup-mlx), generated from `Runtime/MLX` in this source repository. Add the public runtime repository in Xcode at exact version `0.1.0-beta.2`, or declare:
 
 ```swift
 // Package.swift dependency
-.package(url: "https://github.com/pomvox/pomvox-cleanup-mlx.git", exact: "0.1.0-beta.1")
+.package(url: "https://github.com/pomvox/pomvox-cleanup-mlx.git", exact: "0.1.0-beta.2")
 
 // Application target dependency
 .product(name: "PomvoxCleanupMLX", package: "pomvox-cleanup-mlx")
 ```
 
-Use an Xcode build to package the dependency's Metal shader resources. A plain `swift build` is insufficient to package the required shader library. The [separate consumer](Examples/Consumer) demonstrates a working application build. The runtime pulls the matching core SDK version automatically; no submodule is required. Core/cloud-only consumers can instead add `https://github.com/pomvox/pomvox-cleanup-engine.git` at exact version `0.1.0-beta.1` and select `PomvoxCleanup` or `PomvoxCleanupCloud`.
+Use an Xcode build to package the dependency's Metal shader resources. A plain `swift build` is insufficient to package the required shader library. The [separate consumer](Examples/Consumer) demonstrates a working application build. The runtime pulls the matching core SDK version automatically; no submodule is required. Core/cloud-only consumers can instead add `https://github.com/pomvox/pomvox-cleanup-engine.git` at exact version `0.1.0-beta.2` and select `PomvoxCleanup` or `PomvoxCleanupCloud`.
 
 ### 2. Prepare assets already on disk
 
@@ -159,7 +159,7 @@ The next milestone is a development integration exercising real dictation, cance
 
 ## Releases and CI
 
-See [release notes](docs/releases/0.1.0-beta.1.md), [changelog](CHANGELOG.md), and
+See [release notes](docs/releases/0.1.0-beta.2.md), [changelog](CHANGELOG.md), and
 [release procedure](docs/releases/README.md). SDK and standalone runtime tags share
 the version in `VERSION`; the model pack has its own independent version.
 GitHub CI tests the dependency-free core in Debug/Release and both sanitizers,

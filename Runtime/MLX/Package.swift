@@ -18,6 +18,8 @@ let package = Package(
             .product(name: "MLXLLM", package: "mlx-swift-lm"),
             .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
             .product(name: "MLXLMTokenizers", package: "swift-tokenizers-mlx"),
+            // Keep the exact tokenizer constraint active for transitive consumers.
+            .product(name: "Tokenizers", package: "swift-tokenizers"),
         ]),
         .testTarget(name: "PomvoxCleanupMLXTests", dependencies: ["PomvoxCleanupMLX"]),
     ],

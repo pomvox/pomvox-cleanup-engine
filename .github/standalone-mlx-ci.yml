@@ -27,9 +27,33 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: test "$RELEASE_TAG" = "v$(cat VERSION)"
       - run: brew install xcodegen
+      - name: Consume the runtime remotely at the exact pushed commit
+        run: |
+          python3 - <<'PYTHON'
+          import os
+          from pathlib import Path
+          p = Path('Examples/Consumer/project.yml')
+          s = p.read_text()
+          assert s.count('    path: ../..\n') == 1
+          p.write_text(s.replace('    path: ../..\n',
+              '    url: https://github.com/pomvox/pomvox-cleanup-mlx.git\n'
+              '    revision: ' + os.environ['GITHUB_SHA'] + '\n'))
+          PYTHON
       - run: xcodegen generate --spec Examples/Consumer/project.yml
       - name: Build with the tagged public core dependency
         run: >-
           xcodebuild -project Examples/Consumer/CleanupConsumer.xcodeproj
           -scheme Consumer -configuration Debug -derivedDataPath "$RUNNER_TEMP/consumer"
           -destination 'platform=macOS,arch=arm64' build-for-testing
+      - name: Verify resolved runtime, core and tokenizer identities
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          from pathlib import Path
+          pins = json.loads(Path('Examples/Consumer/CleanupConsumer.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved').read_text())['pins']
+          pins = {p['identity']: p for p in pins}
+          assert pins['pomvox-cleanup-mlx']['state']['revision'] == os.environ['GITHUB_SHA']
+          assert pins['pomvox-cleanup-engine']['state']['version'] == Path('VERSION').read_text().strip()
+          assert pins['swift-tokenizers']['state']['version'] == '0.5.0'
+          assert all(p['kind'] == 'remoteSourceControl' for p in pins.values())
+          PYTHON

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.2 — 2026-09-24
+
+- Fix remote SwiftPM consumption: keep the exact tokenizer version active by depending on its product.
+- Build runtime CI through a remote dependency on the exact pushed commit and verify resolved versions.
+- Supersede beta.1 tags, which were withheld from GitHub Releases after the final remote-install check failed.
+
 ## 0.1.0-beta.1 — 2026-09-24
 
 First tagged public SDK release. This beta does not claim production readiness.
