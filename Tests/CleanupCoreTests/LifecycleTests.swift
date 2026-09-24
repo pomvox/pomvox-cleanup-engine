@@ -53,8 +53,10 @@ final class LifecycleTests: XCTestCase, @unchecked Sendable {
 
     func testRepeatedCancellationAndCloseNeverOverlapResourceRelease() async throws {
         for _ in 0..<40 {
-            let runtime = CountingRuntime(delay: .milliseconds(50))
-            let session = try CleanupSession(runtime: runtime, provenance: provenance)
+            // Admit every caller: an already completed busy fallback cannot be canceled retroactively.
+            // Keep admitted work pending until cancellation, even on a heavily loaded test machine.
+            let runtime = CountingRuntime(delay: .seconds(60))
+            let session = try CleanupSession(runtime: runtime, provenance: provenance, queueCapacity: 8)
             let tasks = (0..<8).map { _ in Task { try await session.clean("hello") } }
             for task in tasks { task.cancel() }
             await session.close()

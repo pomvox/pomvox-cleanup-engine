@@ -262,3 +262,84 @@ extension PackTests {
         } catch { XCTAssertEqual(error as? CleanupError, .unavailable("injected allocation failure")) }
     }
 }
+
+extension PackTests {
+    func testInstallerClonesSnapshotSymlinksAndRefusesOverwrite() throws {
+        let source = try fixture()
+        let destination = source.deletingLastPathComponent().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: source); try? FileManager.default.removeItem(at: destination) }
+        let manifest = try Data(contentsOf: source.appendingPathComponent("pack.json"))
+        let weights = source.appendingPathComponent("model.safetensors")
+        let blob = source.appendingPathComponent("blob")
+        try FileManager.default.moveItem(at: weights, to: blob)
+        try FileManager.default.createSymbolicLink(at: weights, withDestinationURL: blob)
+        let installed = try PackInstaller.install(snapshot: source, manifestData: manifest, destination: destination)
+        XCTAssertEqual(installed.manifest.id, "test")
+        XCTAssertNoThrow(try PackLoader.revalidate(installed))
+        XCTAssertThrowsError(try PackInstaller.install(snapshot: source, manifestData: manifest, destination: destination))
+        try Data("modified source".utf8).write(to: blob)
+        XCTAssertNoThrow(try PackLoader.validate(directory: destination))
+    }
+
+    func testInstallerCorruptionDoesNotPublish() throws {
+        let source = try fixture()
+        let destination = source.deletingLastPathComponent().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: source); try? FileManager.default.removeItem(at: destination) }
+        let manifest = try Data(contentsOf: source.appendingPathComponent("pack.json"))
+        try Data("evil prompt".utf8).write(to: source.appendingPathComponent("system_v2.txt"))
+        XCTAssertThrowsError(try PackInstaller.install(snapshot: source, manifestData: manifest, destination: destination))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+}
+
+extension PackTests {
+    func testValidatedPackReuseRejectsChangesAndReplacement() throws {
+        let source = try fixture()
+        defer { try? FileManager.default.removeItem(at: source) }
+        let pack = try PackLoader.validate(directory: source)
+        XCTAssertNoThrow(try PackLoader.revalidate(pack))
+        // Same length, different bytes; size-only checks would miss this.
+        try Data("evil prompt".utf8).write(to: source.appendingPathComponent("system_v2.txt"))
+        XCTAssertThrowsError(try PackLoader.revalidate(pack))
+    }
+}
+
+extension PackTests {
+    func testConcurrentNativeInstallersPublishExactlyOnePack() async throws {
+        let source = try fixture()
+        let destination = source.deletingLastPathComponent().appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: source); try? FileManager.default.removeItem(at: destination) }
+        let manifest = try Data(contentsOf: source.appendingPathComponent("pack.json"))
+        let successes = await withTaskGroup(of: Bool.self) { group in
+            for _ in 0..<2 {
+                group.addTask {
+                    do {
+                        _ = try PackInstaller.install(snapshot: source, manifestData: manifest, destination: destination)
+                        return true
+                    } catch { return false }
+                }
+            }
+            var count = 0
+            for await success in group where success { count += 1 }
+            return count
+        }
+        XCTAssertEqual(successes, 1)
+        XCTAssertNoThrow(try PackLoader.validate(directory: destination))
+    }
+
+    func testCleanerReopensValidatedPackAfterResourceRelease() async throws {
+        let source = try fixture()
+        defer { try? FileManager.default.removeItem(at: source) }
+        let firstRuntime = SetupRuntime()
+        let first = try await Cleaner.open(pack: .directory(source), runtime: RuntimeFactory(name: "first") { _ in firstRuntime })
+        let pack = first.pack
+        try await first.closeAndWait()
+        let state = await firstRuntime.state()
+        XCTAssertEqual(state.1, 1)
+        let second = try await Cleaner.open(pack: .validated(pack), runtime: RuntimeFactory(name: "second") { _ in SetupRuntime() })
+        let result = try await second.clean("hello")
+        XCTAssertEqual(result.status, .unchanged)
+        XCTAssertEqual(second.pack.digest, pack.digest)
+        try await second.closeAndWait()
+    }
+}

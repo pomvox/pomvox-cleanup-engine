@@ -20,7 +20,14 @@ public protocol CleanupRuntime: Sendable {
 }
 
 /// A bounded worker independent of its waiters. Actor reentrancy cannot admit a second worker.
+public enum CleanerAvailability: String, Sendable { case ready, working, quarantined, closed }
+
 public actor CleanupSession: Cleaning {
+    public var availability: CleanerAvailability {
+        if closed { return .closed }
+        guard let active else { return .ready }
+        return entries[active] == nil ? .quarantined : .working
+    }
     private struct Entry {
         let request: CleanupRequest
         let entered: ContinuousClock.Instant
@@ -38,6 +45,7 @@ public actor CleanupSession: Cleaning {
     private var active: UUID?
     private var worker: Task<Void, Never>?
     private var closed = false
+    public private(set) var resourcesReleased = false
 
     public init(runtime: any CleanupRuntime, provenance: Provenance, preparationMS: Double = 0,
                 queueCapacity: Int = 2) throws {
@@ -127,27 +135,41 @@ public actor CleanupSession: Cleaning {
         // GPU work has returned. Only now may another generation or resource release begin.
         active = nil
         worker = nil
-        if closed { await runtime.close() }
+        if closed { await runtime.close(); resourcesReleased = true }
         else { startNext() }
     }
 
     private func accepted(_ entry: Entry, _ output: RuntimeOutput) -> CleanupResult {
-        if let reason = output.failure { return fallback(entry, reason) }
         guard output.timings.isValid else { return fallback(entry, .invalidResponse) }
+        var timings = output.timings
+        let base = timing(entry)
+        timings.preparationMS = base.preparationMS
+        timings.queueMS = base.queueMS
+        timings.totalMS = base.totalMS
+        timings.budgetMS = base.budgetMS
+        func failed(_ reason: FallbackReason, warning: String? = nil) -> CleanupResult {
+            timings.totalMS = entry.entered.duration(to: .now).milliseconds
+            return CleanupResult(text: entry.request.text, edits: [], status: .fallback(reason),
+                provenance: provenanceFor(entry), timings: timings,
+                warnings: output.warnings + (warning.map { [$0] } ?? []))
+        }
+        if let reason = output.failure { return failed(reason) }
         let validationStart = ContinuousClock.now
-        guard let candidate = output.candidate, candidate.utf8.count <= 65_536,
-              let text = CleanupLogic.acceptOutput(raw: entry.request.text, cleaned: candidate)
-        else { return fallback(entry, .rejected) }
-        var timings = timing(entry)
-        timings.tokenizationMS = output.timings.tokenizationMS
-        timings.prefillMS = output.timings.prefillMS
-        timings.inferenceMS = output.timings.inferenceMS
+        guard let candidate = output.candidate, candidate.utf8.count <= 65_536 else {
+            return failed(.rejected, warning: "rejectedBy:invalidCandidate")
+        }
+        let evaluation = CleanupLogic.evaluateOutput(raw: entry.request.text, cleaned: candidate)
         timings.validationMS = validationStart.duration(to: .now).milliseconds
+        let text: String
+        switch evaluation {
+        case .success(let accepted): text = accepted
+        case .failure(let reason): return failed(.rejected, warning: "rejectedBy:" + reason.rawValue)
+        }
         let diffStart = ContinuousClock.now
         let edits = TextEdit.between(entry.request.text, and: text)
         timings.diffMS = diffStart.duration(to: .now).milliseconds
         timings.totalMS = entry.entered.duration(to: .now).milliseconds
-        if ContinuousClock.now >= entry.deadline { return fallback(entry, .timedOut) }
+        if ContinuousClock.now >= entry.deadline { return failed(.timedOut) }
         return CleanupResult(text: text, edits: edits, status: edits.isEmpty ? .unchanged : .cleaned,
                              provenance: provenanceFor(entry), timings: timings, warnings: output.warnings)
     }
@@ -201,6 +223,6 @@ public actor CleanupSession: Cleaning {
         closed = true
         worker?.cancel()
         for (id, entry) in entries { finish(id, .success(fallback(entry, .unavailable))) }
-        if active == nil { await runtime.close() }
+        if active == nil { await runtime.close(); resourcesReleased = true }
     }
 }

@@ -1,0 +1,77 @@
+Test Suite 'All tests' started at 2026-09-23 17:46:40.312.
+Test Suite 'ModelTests.xctest' started at 2026-09-23 17:46:40.313.
+Test Suite 'ModelDifferentialTests' started at 2026-09-23 17:46:40.313.
+Test Case '-[ModelTests.ModelDifferentialTests testRealArtifactDifferential]' started.
+2026-09-23 17:46:45.156 xctest[10827:49681] cleanup: cached 256-token prefix for style=*
+2026-09-23 17:46:45.431 xctest[10827:49681] cleanup: gen 0.27s prefill=11tok@72tps decode=2tok@17.3tps cached=prefix spec=0/0
+2026-09-23 17:46:45.923 xctest[10827:49681] cleanup: gen 0.49s prefill=20tok@124tps decode=8tok@24.6tps cached=prefix spec=3/5 rounds=2
+2026-09-23 17:46:46.371 xctest[10827:49681] cleanup: gen 0.44s prefill=20tok@126tps decode=7tok@25.2tps cached=prefix spec=3/7 rounds=2
+2026-09-23 17:46:46.777 xctest[10827:49681] cleanup: gen 0.40s prefill=27tok@165tps decode=5tok@21.1tps cached=prefix spec=2/5 rounds=2
+2026-09-23 17:46:47.181 xctest[10827:49681] cleanup: gen 0.40s prefill=28tok@169tps decode=10tok@43.5tps cached=prefix spec=7/11 rounds=3
+2026-09-23 17:46:48.411 xctest[10827:49681] cleanup: gen 1.22s prefill=34tok@122tps decode=19tok@20.2tps cached=prefix spec=5/17 rounds=5
+2026-09-23 17:46:49.059 xctest[10827:49681] cleanup: gen 0.64s prefill=33tok@119tps decode=21tok@58.1tps cached=prefix spec=16/16 rounds=4
+2026-09-23 17:46:49.582 xctest[10827:49681] cleanup: gen 0.51s prefill=20tok@120tps decode=9tok@25.9tps cached=prefix spec=4/6 rounds=3
+2026-09-23 17:46:50.912 xctest[10827:49681] cleanup: gen 1.32s prefill=45tok@158tps decode=32tok@30.9tps cached=prefix spec=18/31 rounds=10
+2026-09-23 17:46:51.570 xctest[10827:49681] cleanup: gen 0.65s prefill=24tok@148tps decode=13tok@26.7tps cached=prefix spec=6/11 rounds=3
+2026-09-23 17:46:52.036 xctest[10827:49681] cleanup: gen 0.46s prefill=25tok@152tps decode=16tok@54.2tps cached=prefix spec=12/12 rounds=3
+2026-09-23 17:46:53.288 xctest[10827:49681] cleanup: gen 1.24s prefill=25tok@151tps decode=20tok@18.6tps cached=prefix spec=4/18 rounds=5
+2026-09-23 17:46:53.918 xctest[10827:49681] cleanup: gen 0.62s prefill=25tok@154tps decode=12tok@26.1tps cached=prefix spec=6/9 rounds=3
+2026-09-23 17:46:54.309 xctest[10827:49681] cleanup: gen 0.38s prefill=11tok@66tps decode=3tok@14.1tps cached=prefix spec=0/0
+2026-09-23 17:46:55.818 xctest[10827:49681] cleanup: gen 1.49s prefill=44tok@144tps decode=34tok@28.6tps cached=prefix spec=17/42 rounds=13
+2026-09-23 17:46:56.445 xctest[10827:49681] cleanup: gen 0.62s prefill=32tok@231tps decode=25tok@52.0tps cached=prefix spec=17/17 rounds=5
+2026-09-23 17:46:57.071 xctest[10827:49681] cleanup: gen 0.62s prefill=23tok@158tps decode=15tok@31.7tps cached=prefix spec=7/13 rounds=4
+2026-09-23 17:46:57.470 xctest[10827:49681] cleanup: gen 0.39s prefill=21tok@145tps decode=10tok@40.7tps cached=prefix spec=6/8 rounds=2
+2026-09-23 17:46:58.175 xctest[10827:49681] cleanup: gen 0.70s prefill=22tok@152tps decode=13tok@23.5tps cached=prefix spec=3/11 rounds=3
+2026-09-23 17:46:58.639 xctest[10827:49681] cleanup: gen 0.46s prefill=23tok@157tps decode=15tok@48.4tps cached=prefix spec=10/10 rounds=3
+2026-09-23 17:46:59.096 xctest[10827:49681] cleanup: gen 0.45s prefill=25tok@170tps decode=17tok@55.9tps cached=prefix spec=12/12 rounds=3
+2026-09-23 17:46:59.489 xctest[10827:49681] cleanup: gen 0.39s prefill=18tok@122tps decode=10tok@42.1tps cached=prefix spec=6/6 rounds=2
+2026-09-23 17:47:00.074 xctest[10827:49681] cleanup: gen 0.58s prefill=25tok@166tps decode=17tok@39.8tps cached=prefix spec=10/13 rounds=4
+2026-09-23 17:47:00.464 xctest[10827:49681] cleanup: gen 0.38s prefill=20tok@135tps decode=12tok@51.3tps cached=prefix spec=8/8 rounds=2
+2026-09-23 17:47:01.753 xctest[10827:49681] cleanup: gen 1.28s prefill=26tok@177tps decode=19tok@16.7tps cached=prefix spec=2/26 rounds=8
+Test Case '-[ModelTests.ModelDifferentialTests testRealArtifactDifferential]' passed (145.837 seconds).
+Test Case '-[ModelTests.ModelDifferentialTests testVocabularyPrefixParityAndReuse]' started.
+Test Case '-[ModelTests.ModelDifferentialTests testVocabularyPrefixParityAndReuse]' passed (40.627 seconds).
+Test Suite 'ModelDifferentialTests' passed at 2026-09-23 17:49:46.779.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 186.465 (186.466) seconds
+Test Suite 'PromptLookupDrafterTests' started at 2026-09-23 17:49:46.780.
+Test Case '-[ModelTests.PromptLookupDrafterTests testDefaultsAreTheMeasuredSweetSpot]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testDefaultsAreTheMeasuredSweetSpot]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testDraftIsCappedAtMaxDraft]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testDraftIsCappedAtMaxDraft]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testFallsBackToShorterKeys]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testFallsBackToShorterKeys]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testGeneratedTextIsPartOfThePool]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testGeneratedTextIsPartOfThePool]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testKeyStraddlingTheSeamIsIgnored]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testKeyStraddlingTheSeamIsIgnored]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testMostRecentOccurrenceWins]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testMostRecentOccurrenceWins]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testNothingGeneratedYetMeansNoDraft]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testNothingGeneratedYetMeansNoDraft]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testProposalNeverCrossesFromInputIntoGenerated]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testProposalNeverCrossesFromInputIntoGenerated]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testProposesWhatFollowedTheNgramInTheInput]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testProposesWhatFollowedTheNgramInTheInput]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testShortGenerationUsesWhatItHas]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testShortGenerationUsesWhatItHas]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testTheTrailingKeyItselfNeverMatches]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testTheTrailingKeyItselfNeverMatches]' passed (0.000 seconds).
+Test Case '-[ModelTests.PromptLookupDrafterTests testZeroMaxDraftDisablesDrafting]' started.
+Test Case '-[ModelTests.PromptLookupDrafterTests testZeroMaxDraftDisablesDrafting]' passed (0.000 seconds).
+Test Suite 'PromptLookupDrafterTests' passed at 2026-09-23 17:49:46.782.
+	 Executed 12 tests, with 0 failures (0 unexpected) in 0.002 (0.003) seconds
+Test Suite 'SpeculativeDecoderPolicyTests' started at 2026-09-23 17:49:46.782.
+Test Case '-[ModelTests.SpeculativeDecoderPolicyTests testPassCarriesAtMostFiveTokens]' started.
+Test Case '-[ModelTests.SpeculativeDecoderPolicyTests testPassCarriesAtMostFiveTokens]' passed (0.000 seconds).
+Test Case '-[ModelTests.SpeculativeDecoderPolicyTests testTheDrafterAndThePolicyAgree]' started.
+Test Case '-[ModelTests.SpeculativeDecoderPolicyTests testTheDrafterAndThePolicyAgree]' passed (0.000 seconds).
+Test Suite 'SpeculativeDecoderPolicyTests' passed at 2026-09-23 17:49:46.783.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'ModelTests.xctest' passed at 2026-09-23 17:49:46.783.
+	 Executed 16 tests, with 0 failures (0 unexpected) in 186.466 (186.470) seconds
+Test Suite 'All tests' passed at 2026-09-23 17:49:46.783.
+	 Executed 16 tests, with 0 failures (0 unexpected) in 186.466 (186.472) seconds
+DIFFERENTIAL mode=library uncached=false fixtures=24 medianMS=773.013584 acceptedDrafts=0
+DIFFERENTIAL mode=greedy uncached=false fixtures=24 medianMS=954.183375 acceptedDrafts=0
+DIFFERENTIAL mode=speculative uncached=false fixtures=24 medianMS=581.735125 acceptedDrafts=184
+DIFFERENTIAL mode=speculative uncached=true fixtures=24 medianMS=1592.930958 acceptedDrafts=184

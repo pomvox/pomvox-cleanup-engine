@@ -74,3 +74,40 @@ extension AdapterTests {
         }
     }
 }
+
+
+private actor DeadlineRecordingCleaner: Cleaning {
+    private(set) var deadline: Duration?
+    func clean(_ request: CleanupRequest) async throws -> CleanupResult {
+        deadline = request.deadline
+        return CleanupResult(text: request.text, edits: [], status: .unchanged,
+            provenance: Provenance(packID: "test", packVersion: "1", artifactDigest: "test",
+                modelRevision: "test", runtime: "fake", route: "local"))
+    }
+}
+
+extension AdapterTests {
+    func testExplicitRemainingBudgetIsNeverExtendedForLongInput() async throws {
+        let cleaner = DeadlineRecordingCleaner()
+        let adapter = PomvoxCleanupAdapter(cleaner: cleaner)
+        _ = try await adapter.finish(raw: String(repeating: "hello ", count: 500),
+            vocabulary: [], timeoutSeconds: 0.1, spokenFormatting: { $0 },
+            dictionary: { $0 }, signature: { $0 }, insert: { _ in })
+        let deadline = await cleaner.deadline
+        XCTAssertEqual(deadline, .milliseconds(100))
+    }
+}
+
+extension AdapterTests {
+    func testCancellationInsideHostTransformPreventsInsertion() async throws {
+        let adapter = PomvoxCleanupAdapter(cleaner: DeadlineRecordingCleaner())
+        var inserted = false
+        do {
+            _ = try await adapter.finish(raw: "hello", vocabulary: [], timeoutSeconds: 1,
+                spokenFormatting: { text in adapter.cancel(); return text },
+                dictionary: { $0 }, signature: { $0 }, insert: { _ in inserted = true })
+            XCTFail("a host callback retired the session before insertion")
+        } catch is CancellationError {}
+        XCTAssertFalse(inserted)
+    }
+}

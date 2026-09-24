@@ -92,3 +92,33 @@ final class ModelDifferentialTests: XCTestCase {
         }
     }
 }
+
+
+extension ModelDifferentialTests {
+    func testVocabularyPrefixParityAndReuse() async throws {
+        guard let path = ProcessInfo.processInfo.environment["POMVOX_TEST_PACK"] else {
+            throw XCTSkip("set POMVOX_TEST_PACK; never downloads")
+        }
+        let pack = try PackLoader.validate(directory: URL(fileURLWithPath: path))
+        let dictionaries = [["Pomvox"], ["Pomvox", "Abhi"], [], ["Pomvox"],
+            (0..<64).map { "Term\($0)" }, ["Caf\u{00e9}"], ["Cafe\u{0301}"], ["Caf\u{00e9}"]]
+        var reference: [String] = []
+        for disabled in [true, false] {
+            let runtime = try await MLXRuntime.open(pack: pack, prefixDisabled: disabled, vocabulary: dictionaries[0])
+            do {
+                for (index, dictionary) in dictionaries.enumerated() {
+                    for repetition in 0..<2 {
+                        let output = try await runtime.generate(CleanupRequest(
+                            "um please send the pomvox report to abhi tomorrow", vocabulary: dictionary),
+                            deadline: .now.advanced(by: .seconds(60)))
+                        let candidate = try XCTUnwrap(output.candidate)
+                        XCTAssertEqual(output.timings.prefixCacheUsed, !disabled)
+                        if disabled { reference.append(candidate) }
+                        else { XCTAssertEqual(Array(candidate.utf8), Array(reference[index * 2 + repetition].utf8)) }
+                    }
+                }
+                await runtime.close()
+            } catch { await runtime.close(); throw error }
+        }
+    }
+}

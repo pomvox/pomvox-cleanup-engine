@@ -1,0 +1,30 @@
+[0/1] Planning build
+Building for debugging...
+[0/5] Write sources
+[3/5] Write swift-version--58304C5D6DBC2206.txt
+[5/9] Compiling PomvoxAdapterExample PomvoxCleanupAdapter.swift
+[6/9] Emitting module PomvoxAdapterExample
+[7/11] Compiling CleanupCoreTests AdapterTests.swift
+[8/11] Emitting module CleanupCoreTests
+[9/12] Compiling CleanupPacksTests PackTests.swift
+[10/12] Emitting module CleanupPacksTests
+[10/12] Write Objects.LinkFileList
+[11/12] Linking PomvoxCleanupPackageTests
+Build complete! (1.47s)
+Test Suite 'Selected tests' started at 2026-09-23 18:12:30.334.
+Test Suite 'PomvoxCleanupPackageTests.xctest' started at 2026-09-23 18:12:30.335.
+Test Suite 'AdapterTests' started at 2026-09-23 18:12:30.335.
+Test Case '-[CleanupCoreTests.AdapterTests testCancellationInsideHostTransformPreventsInsertion]' started.
+/Users/abhiram/Desktop/projects/pomvox-cleanup-engine/Tests/CleanupCoreTests/AdapterTests.swift:109: error: -[CleanupCoreTests.AdapterTests testCancellationInsideHostTransformPreventsInsertion] : failed - a host callback retired the session before insertion
+/Users/abhiram/Desktop/projects/pomvox-cleanup-engine/Tests/CleanupCoreTests/AdapterTests.swift:111: error: -[CleanupCoreTests.AdapterTests testCancellationInsideHostTransformPreventsInsertion] : XCTAssertFalse failed
+Test Case '-[CleanupCoreTests.AdapterTests testCancellationInsideHostTransformPreventsInsertion]' failed (0.125 seconds).
+Test Suite 'AdapterTests' failed at 2026-09-23 18:12:30.461.
+	 Executed 1 test, with 2 failures (0 unexpected) in 0.125 (0.126) seconds
+Test Suite 'PomvoxCleanupPackageTests.xctest' failed at 2026-09-23 18:12:30.461.
+	 Executed 1 test, with 2 failures (0 unexpected) in 0.125 (0.126) seconds
+Test Suite 'Selected tests' failed at 2026-09-23 18:12:30.461.
+	 Executed 1 test, with 2 failures (0 unexpected) in 0.125 (0.127) seconds
+◇ Test run started.
+↳ Testing Library Version: 1501
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

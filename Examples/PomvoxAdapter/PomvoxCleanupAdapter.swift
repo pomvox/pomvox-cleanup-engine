@@ -29,8 +29,9 @@ final class PomvoxCleanupAdapter {
         let session = currentSession
         defer { if currentSession == session { task = nil } }
         let cleaner = self.cleaner
-        // Preserve the app's length-aware budget explicitly, without its reload credit.
-        let budget = min(60, max(timeoutSeconds, (0.6 + Double(raw.count) / 110) * 1.4))
+        // The host has already chosen its remaining budget, including preparation time.
+        // A long transcript must never silently extend that explicit deadline.
+        let budget = min(60, timeoutSeconds)
         let running = Task { try await cleaner.clean(CleanupRequest(raw, vocabulary: vocabulary,
                                                                     deadline: .seconds(budget))) }
         task = running
@@ -43,7 +44,11 @@ final class PomvoxCleanupAdapter {
         let formatted = spokenFormatting(result.text)
         let corrected = dictionary(formatted)
         let final = signature(corrected)
-        insert(final) // No suspension between session validation and insertion.
+        // Host callbacks can retire this session synchronously; cancellation can also
+        // arrive from another task while transforms execute.
+        try Task.checkCancellation()
+        guard currentSession == session else { throw CancellationError() }
+        insert(final) // No suspension or host callback between this check and insertion.
         return result
     }
 }

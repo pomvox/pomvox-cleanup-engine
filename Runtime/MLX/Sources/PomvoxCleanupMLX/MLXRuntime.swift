@@ -7,8 +7,14 @@ import MLXLMTokenizers
 
 extension RuntimeFactory {
     public static var mlx: RuntimeFactory {
+        mlx(vocabulary: [])
+    }
+
+    /// Prepare the initial dictionary before the first dictation. Later requests may change it.
+    /// Buffer-pool clearing affects every MLX workload in the process; opt in only deliberately.
+    public static func mlx(vocabulary: [String], clearBufferCache: Bool = false) -> RuntimeFactory {
         RuntimeFactory(name: "mlx-swift-lm-3.31.4/mlx-0.31.4/speculative") { pack in
-            try await MLXRuntime.open(pack: pack)
+            try await MLXRuntime.open(pack: pack, vocabulary: vocabulary, clearBufferCache: clearBufferCache)
         }
     }
 }
@@ -39,6 +45,9 @@ actor MLXRuntime: CleanupRuntime {
     private var prefix: Prefix?
     private let frozen: String
     private let mode: Decoding
+    private var prefixHint = ""
+    private var prefixEnabled = true
+    private var clearBufferCache = false
     private var active = false
     private(set) var lastStats: CleanupGenStats?
     var hasPrefix: Bool { prefix != nil }
@@ -48,7 +57,8 @@ actor MLXRuntime: CleanupRuntime {
     }
 
     static func open(pack: ValidatedPack, mode: Decoding = .speculative,
-                     prefixDisabled: Bool = false) async throws -> MLXRuntime {
+                     prefixDisabled: Bool = false, vocabulary: [String] = [],
+                     clearBufferCache: Bool = false) async throws -> MLXRuntime {
         // Optimized decoding is admitted only for the artifact set covered by our differential.
         // A different model/tokenizer/prompt must earn a new compatibility entry.
         let supported = SupportedBaseline.artifacts
@@ -56,25 +66,31 @@ actor MLXRuntime: CleanupRuntime {
               pack.manifest.artifacts.allSatisfy({ supported[$0.path] == $0.sha256 }) else {
             throw CleanupError.incompatible("MLX preview supports only the pinned, differential-tested baseline")
         }
+        try CleanupRequest("", vocabulary: vocabulary).validate()
         let lease = try DeviceLease.acquire()
         let frozen = try String(contentsOf: pack.directory.appendingPathComponent("system_v2.txt"), encoding: .utf8)
         // Directory overload and directory-only tokenizer loader. No HubClient/downloader is linked.
         let container = try await LLMModelFactory.shared.loadContainer(from: pack.directory, using: TokenizersLoader())
         let runtime = MLXRuntime(container: container, frozen: frozen, mode: mode, lease: lease)
+        await runtime.configure(prefixEnabled: !prefixDisabled, clearBufferCache: clearBufferCache)
         do {
-            if !prefixDisabled { try await runtime.buildPrefix() }
-            let warm = try await runtime.generate(CleanupRequest("um hello"), deadline: .now.advanced(by: .seconds(120)))
+            let warm = try await runtime.generate(CleanupRequest("um hello", vocabulary: vocabulary), deadline: .now.advanced(by: .seconds(120)))
             guard warm.candidate != nil else { throw CleanupError.unavailable("model warmup did not complete") }
             return runtime
         } catch { await runtime.close(); throw error }
     }
 
-    private func buildPrefix() async throws {
+    private func configure(prefixEnabled: Bool, clearBufferCache: Bool) {
+        self.prefixEnabled = prefixEnabled
+        self.clearBufferCache = clearBufferCache
+    }
+
+    private func buildPrefix(hint: String) async throws {
         guard let container else { throw CleanupError.unavailable("closed") }
         let frozen = self.frozen
         prefix = try await container.perform { context in
-            let a = try await Self.render(context, text: "placeholder one", frozen: frozen, hint: "")
-            let b = try await Self.render(context, text: "a different text entirely", frozen: frozen, hint: "")
+            let a = try await Self.render(context, text: "placeholder one", frozen: frozen, hint: hint)
+            let b = try await Self.render(context, text: "a different text entirely", frozen: frozen, hint: hint)
             let tokens = Array(a.prefix(CleanupLogic.commonPrefixLen(a, b)))
             guard !tokens.isEmpty else { throw CleanupError.unavailable("empty model prefix") }
             let cache = context.model.newCache(parameters: nil)
@@ -87,6 +103,7 @@ actor MLXRuntime: CleanupRuntime {
             eval(cache.flatMap { $0.innerState() })
             return Prefix(tokens: tokens, cache: cache)
         }
+        prefixHint = hint
     }
 
     func generate(_ request: CleanupRequest, deadline: ContinuousClock.Instant) async throws -> RuntimeOutput {
@@ -98,11 +115,18 @@ actor MLXRuntime: CleanupRuntime {
         let remaining = ContinuousClock.now.duration(to: deadline).milliseconds / 1_000
         guard remaining > 0 else { return RuntimeOutput(candidate: nil, failure: .timedOut) }
         let wallDeadline = CFAbsoluteTimeGetCurrent() + remaining
-        let frozen = self.frozen, prefix = self.prefix, mode = self.mode
+        let frozen = self.frozen, mode = self.mode
         let terms = request.vocabulary.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         let hint = terms.isEmpty ? "" : "- Keep these terms spelled exactly as written when you hear them "
             + "(match phonetically, fix the spelling): " + terms.joined(separator: ", ") + ".\n"
-        Memory.clearCache()
+        if prefixEnabled && (prefix == nil || prefixHint != hint) {
+            // One bounded cache slot; replacement happens only while this worker owns the runtime.
+            try await buildPrefix(hint: hint)
+        }
+        try Task.checkCancellation()
+        guard ContinuousClock.now < deadline else { return RuntimeOutput(candidate: nil, failure: .timedOut) }
+        let prefix = self.prefix
+        if clearBufferCache { Memory.clearCache() }
         let (output, stats): (RuntimeOutput, CleanupGenStats) = try await container.perform { context in
             let tokenStart = ContinuousClock.now
             var tokens = try await Self.render(context, text: request.text, frozen: frozen, hint: hint)
@@ -155,6 +179,10 @@ actor MLXRuntime: CleanupRuntime {
                 }
             }
             timings.prefillMS = stats.prefillMs; timings.inferenceMS = stats.decodeMs
+            timings.prefixCacheUsed = cache != nil
+            timings.promptTokens = stats.promptTokens; timings.decodeTokens = stats.decodeTokens
+            timings.speculativeRounds = stats.specRounds
+            timings.speculativeDrafted = stats.specDrafted; timings.speculativeAccepted = stats.specAccepted
             return (RuntimeOutput(candidate: text, failure: failure, timings: timings,
                 warnings: cache == nil ? ["prefix-cache-not-used"] : []), stats)
         }
@@ -184,7 +212,7 @@ actor MLXRuntime: CleanupRuntime {
         // Session calls close only after its worker returns.
         guard !active else { return }
         prefix = nil; container = nil
-        Memory.clearCache()
+        if clearBufferCache { Memory.clearCache() }
         lease = nil
     }
 }

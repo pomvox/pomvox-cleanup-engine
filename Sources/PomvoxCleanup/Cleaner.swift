@@ -3,7 +3,7 @@
 import Foundation
 
 public enum LocalPolicy: Sendable { case local }
-public enum PackSource: Sendable { case directory(URL) }
+public enum PackSource: Sendable { case directory(URL), validated(ValidatedPack) }
 
 public struct RuntimeFactory: Sendable {
     public let name: String
@@ -26,9 +26,12 @@ public final class Cleaner: Cleaning, Sendable {
                             policy: LocalPolicy = .local) async throws -> Cleaner {
         let start = ContinuousClock.now
         try Task.checkCancellation()
-        let directory: URL
-        switch source { case .directory(let url): directory = url }
-        let validation = Task.detached { try PackLoader.validate(directory: directory) }
+        let validation = Task.detached {
+            switch source {
+            case .directory(let url): return try PackLoader.validate(directory: url)
+            case .validated(let pack): return try PackLoader.revalidate(pack)
+            }
+        }
         let pack = try await withTaskCancellationHandler {
             try await validation.value
         } onCancel: { validation.cancel() }
@@ -52,6 +55,18 @@ public final class Cleaner: Cleaning, Sendable {
             throw CleanupError.incompatible("the frozen baseline supports vocabulary, not context or style settings")
         }
         return try await session.clean(request)
+    }
+
+    /// A snapshot, not an admission reservation. Never start a second model to bypass quarantine.
+    public var availability: CleanerAvailability { get async { await session.availability } }
+
+    /// Waits for actual resource release; cancellation stops waiting, never reopens admission.
+    public func closeAndWait() async throws {
+        await session.close()
+        while !(await session.resourcesReleased) {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        try Task.checkCancellation()
     }
 
     public func close() async { await session.close() }

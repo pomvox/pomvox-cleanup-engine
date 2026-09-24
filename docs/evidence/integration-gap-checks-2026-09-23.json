@@ -1,0 +1,56 @@
+{
+  "completedChecks": [
+    {
+      "name": "installer",
+      "exitCode": 0,
+      "seconds": 0.177
+    },
+    {
+      "name": "debug",
+      "exitCode": 0,
+      "seconds": 5.704
+    },
+    {
+      "name": "release",
+      "exitCode": 0,
+      "seconds": 5.737
+    },
+    {
+      "name": "lifecycle-1",
+      "exitCode": 0,
+      "seconds": 0.785
+    },
+    {
+      "name": "thread",
+      "exitCode": 0,
+      "seconds": 10.139
+    },
+    {
+      "name": "address",
+      "exitCode": 0,
+      "seconds": 6.364
+    }
+  ],
+  "modelTests": {
+    "tests": 16,
+    "failures": 0,
+    "skips": 0,
+    "network": "denied",
+    "log": "integration-gap-model-2026-09-23.txt",
+    "baselineFixtures": 24,
+    "vocabularySizes": [
+      0,
+      1,
+      2,
+      64
+    ]
+  },
+  "lifecycleStressRepetitionsPassed": 20,
+  "suiteTestsPerConfiguration": 106,
+  "environmentFailures": [
+    "Desktop pack timestamps changed during validation; model assets moved to /tmp from the pinned existing Hugging Face cache.",
+    "Desktop source timestamps changed during compilation; root checks ran against a byte-identical /tmp copy."
+  ],
+  "testRepair": "The original 8-caller cancellation test could complete busy results before cancellation with capacity 2. It now admits all 8 callers and holds work for cooperative cancellation. The original failure occurred at lifecycle repetition 15.",
+  "consumerBuild": "Xcode Debug build-for-testing passed"
+}

@@ -90,6 +90,12 @@ public struct CleanupTimings: Codable, Equatable, Sendable {
     public var diffMS: Double = 0
     public var totalMS: Double = 0
     public var budgetMS: Double = 0
+    public var prefixCacheUsed: Bool? = nil
+    public var promptTokens: Int? = nil
+    public var decodeTokens: Int? = nil
+    public var speculativeRounds: Int? = nil
+    public var speculativeDrafted: Int? = nil
+    public var speculativeAccepted: Int? = nil
     public var serverInferenceMS: Double? = nil
     public init() {}
 
@@ -97,7 +103,10 @@ public struct CleanupTimings: Codable, Equatable, Sendable {
     public var isValid: Bool {
         let required = [preparationMS, queueMS, validationMS, diffMS, totalMS, budgetMS]
         let optional = [tokenizationMS, prefillMS, inferenceMS, serverInferenceMS].compactMap { $0 }
+        let counts = [promptTokens, decodeTokens, speculativeRounds, speculativeDrafted, speculativeAccepted].compactMap { $0 }
         return (required + optional).allSatisfy { $0.isFinite && $0 >= 0 }
+            && counts.allSatisfy { $0 >= 0 }
+            && (speculativeAccepted ?? 0) <= (speculativeDrafted ?? 0)
     }
 }
 

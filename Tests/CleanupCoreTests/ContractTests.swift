@@ -136,3 +136,51 @@ final class ContractTests: XCTestCase, @unchecked Sendable {
         await session.close()
     }
 }
+
+extension ContractTests {
+    func testRejectedAndTokenLimitedGenerationRetainObservedDiagnostics() async throws {
+        var timings = CleanupTimings()
+        timings.prefillMS = 123; timings.inferenceMS = 456
+        timings.prefixCacheUsed = false; timings.promptTokens = 90
+        for failure in [FallbackReason?.none, .tokenLimit] {
+            let session = try CleanupSession(runtime: ImmediateRuntime(output: RuntimeOutput(
+                candidate: "assistant: hello", failure: failure, timings: timings,
+                warnings: ["prefix-cache-not-used"])), provenance: provenance)
+            let result = try await session.clean("hello")
+            XCTAssertEqual(result.status, .fallback(failure ?? .rejected))
+            XCTAssertEqual(result.text, "hello")
+            XCTAssertTrue(result.edits.isEmpty)
+            XCTAssertEqual(result.timings.prefillMS, 123)
+            XCTAssertEqual(result.timings.inferenceMS, 456)
+            XCTAssertEqual(result.timings.prefixCacheUsed, false)
+            XCTAssertTrue(result.warnings.contains("prefix-cache-not-used"))
+            if failure == nil { XCTAssertTrue(result.warnings.contains("rejectedBy:rolePrefix")) }
+            await session.close()
+        }
+    }
+}
+
+extension ContractTests {
+    func testAvailabilityTracksQuarantineAndRelease() async throws {
+        let runtime = ControlledRuntime()
+        let session = try CleanupSession(runtime: runtime, provenance: provenance)
+        let work = Task { try await session.clean("hello") }
+        await runtime.waitStarted()
+        var state = await session.availability
+        XCTAssertEqual(state, .working)
+        work.cancel()
+        do { _ = try await work.value; XCTFail("expected cancellation") } catch is CancellationError {}
+        state = await session.availability
+        XCTAssertEqual(state, .quarantined)
+        await session.close()
+        var released = await session.resourcesReleased
+        XCTAssertFalse(released)
+        await runtime.release()
+        for _ in 0..<100 {
+            if await session.resourcesReleased { break }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        released = await session.resourcesReleased
+        XCTAssertTrue(released)
+    }
+}

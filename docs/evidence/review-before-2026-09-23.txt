@@ -1,0 +1,50 @@
+Building for debugging...
+[0/13] /tmp/pomvox-review-core/arm64-apple-macosx/debug/PomvoxCleanupPackageTests.derived/runner.swift
+[0/13] Write sources
+[10/13] Write swift-version--58304C5D6DBC2206.txt
+[12/18] Compiling CleanupCore TextEdit.swift
+[13/18] Emitting module CleanupCore
+[14/18] Compiling CleanupCore CleanupLogic.swift
+[15/18] Compiling CleanupCore CleanupSession.swift
+[16/18] Compiling CleanupCore Contract.swift
+[17/23] Compiling CleanupPacks PackManifest.swift
+[18/23] Compiling CleanupPacks PackInstaller.swift
+[19/23] Emitting module CleanupPacks
+[20/23] Emitting module PomvoxCleanupCloud
+[21/23] Compiling PomvoxCleanupCloud CloudCleaner.swift
+[22/27] Emitting module PomvoxCleanup
+[23/27] Compiling PomvoxCleanup Cleaner.swift
+[24/31] Emitting module PomvoxAdapterExample
+[25/31] Compiling PomvoxAdapterExample PomvoxCleanupAdapter.swift
+[26/38] Compiling CleanupCoreTests LifecycleTests.swift
+[27/38] Emitting module PomvoxCleanupCloudTests
+[28/38] Compiling PomvoxCleanupCloudTests CloudTests.swift
+[29/38] Compiling CleanupCoreTests LegacyGuardTests.swift
+[30/38] Compiling CleanupCoreTests RobustnessTests.swift
+[31/38] Compiling CleanupCoreTests ContractTests.swift
+[32/38] Emitting module CleanupCoreTests
+[33/38] Compiling CleanupCoreTests FrozenPromptTests.swift
+[34/38] Compiling CleanupCoreTests AdapterTests.swift
+[35/38] Compiling CleanupPacksTests PackTests.swift
+[36/38] Emitting module CleanupPacksTests
+[37/40] Compiling PomvoxCleanupPackageTests runner.swift
+[38/40] Emitting module PomvoxCleanupPackageTests
+[38/40] Write Objects.LinkFileList
+[39/40] Linking PomvoxCleanupPackageTests
+Build complete! (19.23s)
+Test Suite 'Selected tests' started at 2026-09-23 18:10:02.355.
+Test Suite 'PomvoxCleanupPackageTests.xctest' started at 2026-09-23 18:10:02.357.
+Test Suite 'AdapterTests' started at 2026-09-23 18:10:02.357.
+Test Case '-[CleanupCoreTests.AdapterTests testExplicitRemainingBudgetIsNeverExtendedForLongInput]' started.
+/Users/abhiram/Desktop/projects/pomvox-cleanup-engine/Tests/CleanupCoreTests/AdapterTests.swift:97: error: -[CleanupCoreTests.AdapterTests testExplicitRemainingBudgetIsNeverExtendedForLongInput] : XCTAssertEqual failed: ("Optional(39.021818181818176 seconds)") is not equal to ("Optional(0.1 seconds)")
+Test Case '-[CleanupCoreTests.AdapterTests testExplicitRemainingBudgetIsNeverExtendedForLongInput]' failed (0.145 seconds).
+Test Suite 'AdapterTests' failed at 2026-09-23 18:10:02.503.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.145 (0.145) seconds
+Test Suite 'PomvoxCleanupPackageTests.xctest' failed at 2026-09-23 18:10:02.503.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.145 (0.146) seconds
+Test Suite 'Selected tests' failed at 2026-09-23 18:10:02.503.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.145 (0.148) seconds
+◇ Test run started.
+↳ Testing Library Version: 1501
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

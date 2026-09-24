@@ -15,7 +15,14 @@ public struct ChatMessage: Equatable, Sendable {
     public let content: String
 }
 
+public enum CleanupRejection: String, Error, Codable, Sendable {
+    case emptyOutput, thinkTags, rolePrefix, upperLength, lowerLengthRatio
+    case questionPreservation, shortWordOverlap, echoWithCommentary, markdownHeader
+    case listNotInvited, listInventsContent
+}
+
 public enum CleanupLogic {
+    public static let rulesVersion = "pomvox-guards-v0.2.8"
     public static let styles = ["light", "polish"]
 
     // The prompt text is byte-for-byte cleanup.py's (_SYSTEM/_LIGHT_EXTRA/
@@ -215,6 +222,11 @@ public enum CleanupLogic {
     /// Counts are `String.count` vs Python's `len` — identical on the ASCII
     /// transcripts Parakeet emits.
     public static func acceptOutput(raw: String, cleaned: String) -> String? {
+        try? evaluateOutput(raw: raw, cleaned: cleaned).get()
+    }
+
+    /// The first failing guard, without exposing the candidate or transcript.
+    public static func evaluateOutput(raw: String, cleaned: String) -> Result<String, CleanupRejection> {
         var out = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
         // Python's `raw[:1] not in _QUOTES_OPEN` is false for empty raw (the
         // empty string is "in" everything), so an empty raw also skips the strip.
@@ -225,13 +237,13 @@ public enum CleanupLogic {
             out = String(out.dropFirst().dropLast())
                 .trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        if out.isEmpty { return nil }
+        if out.isEmpty { return .failure(.emptyOutput) }
         let lowered = out.lowercased()
-        if lowered.contains("<think>") || lowered.contains("</think>") { return nil }
-        if rolePrefixes.contains(where: lowered.hasPrefix) { return nil }
-        if out.count > 2 * raw.count + 20 { return nil }
+        if lowered.contains("<think>") || lowered.contains("</think>") { return .failure(.thinkTags) }
+        if rolePrefixes.contains(where: lowered.hasPrefix) { return .failure(.rolePrefix) }
+        if out.count > 2 * raw.count + 20 { return .failure(.upperLength) }
         if raw.count > shortRaw, Double(out.count) < minRatio(forRaw: raw) * Double(raw.count) {
-            return nil
+            return .failure(.lowerLengthRatio)
         }
         // On-device regressions (2026-07-16): the model sometimes ANSWERS a spoken
         // question ("Should I test manually one by one?" -> "Yes, test manually
@@ -242,11 +254,11 @@ public enum CleanupLogic {
         if raw.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("?"),
             !out.contains("?")
         {
-            return nil
+            return .failure(.questionPreservation)
         }
         if raw.count <= shortRaw {
             let rawWords = words(raw)
-            if !rawWords.isEmpty, rawWords.isDisjoint(with: words(out)) { return nil }
+            if !rawWords.isEmpty, rawWords.isDisjoint(with: words(out)) { return .failure(.shortWordOverlap) }
         }
         // Assistant-mode breakouts (rc.1): dictations that talk ABOUT transcripts
         // or rules can flip the model into answering. Generation is capped at ~2x
@@ -255,12 +267,12 @@ public enum CleanupLogic {
         // verbatim plus substantial extra, and never emits markdown headers.
         let trimmedRaw = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedRaw.isEmpty, out.contains(trimmedRaw), out.count >= raw.count + 20 {
-            return nil
+            return .failure(.echoWithCommentary)
         }
         if out.split(separator: "\n").contains(where: {
             $0.drop(while: { $0 == " " || $0 == "\t" }).hasPrefix("#")
         }) {
-            return nil
+            return .failure(.markdownHeader)
         }
         // Lists only when invited: with the list few-shots in the prompt the
         // legacy model occasionally formats ordinary speech ("Go ahead." ->
@@ -275,10 +287,10 @@ public enum CleanupLogic {
         // items is still a rewrite, not a cleanup.
         let lines = out.split(separator: "\n")
         if lines.contains(where: { isListItemLine($0) }) {
-            if !rawInvitesList(raw) { return nil }
-            if !listPreservesContent(raw: raw, lines: lines) { return nil }
+            if !rawInvitesList(raw) { return .failure(.listNotInvited) }
+            if !listPreservesContent(raw: raw, lines: lines) { return .failure(.listInventsContent) }
         }
-        return out
+        return .success(out)
     }
 
     /// Spoken cues that make a list a legitimate rendering of the transcript.

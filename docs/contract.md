@@ -18,7 +18,7 @@ The SDK cannot preempt a GPU kernel or provide hard real-time scheduling. A hung
 
 ## Cache isolation
 
-Each runtime instance owns a single immutable prefix for its exact loaded artifact/tokenizer/prompt set. No cache survives a cleaner replacement. Every generation gets new mutable cache objects copied from that prefix. Vocabulary is rendered after the frozen prompt; if the exact cached prefix no longer matches, generation runs uncached and reports `prefix-cache-not-used`. There is no per-user cache dictionary. Instances are the scope boundary; multi-tenant serving and tenant cache pools are outside this local preview.
+Each runtime instance owns a single immutable prefix for its exact loaded artifact/tokenizer/prompt set. No cache survives a cleaner replacement. Every generation gets new mutable cache objects copied from that prefix. Vocabulary is rendered after the frozen prompt. The runtime retains one prefix for the current rendered vocabulary hint, rebuilding it when that hint changes. Configure `.mlx(vocabulary: terms)` to prepare the initial dictionary during open, and still supply those terms on every request. If the exact cached token prefix does not match, generation runs uncached and reports `prefix-cache-not-used`. There is no per-user cache dictionary. Instances are the scope boundary; multi-tenant serving and tenant cache pools are outside this local preview.
 
 Hybrid recurrent layers legitimately report zero offsets and cannot trim rejected tokens. Prefix preparation requires counting layers to reach exactly the prefix length. Speculative decoding copies caches before verification, then restores and carries accepted tokens forward after a mismatch. Pass length remains five. The differential compares exact UTF-8, not visually equivalent Swift strings.
 
@@ -33,3 +33,24 @@ Provenance includes the pack manifest digest (which covers every artifact digest
 Timings report preparation, queue, tokenization, prefill, decode/inference, validation, diff, total, and chosen budget. A stage not observed is nil. Preparation is separate from request total. The cloud client preserves server inference separately and replaces total with client-observed latency. Fallback timing never counts as successful model cleanup.
 
 Local request code contains no network client, downloads, telemetry or content logging. Setup paths are private filesystem paths and should not be sent to external logging services. Local pack manifests are developer-trusted, hash-checked installations; hash validation does not authenticate a publisher. Signed remote pack distribution is future work. Installed files must remain immutable between validation and loading; hostile concurrent filesystem mutation is outside the preview trust model.
+
+## Integration additions
+
+See [gap review](integration-gap-review.md) for dispositions and limitations, and the
+[app integration prompt](pomvox-integration-prompt.md) for host responsibilities.
+`PackInstaller` provides local verified installation with exclusive publication and
+APFS cloning where available. `PackSource.validated` reuses a process-local validation
+handle only while file identities remain unchanged. `closeAndWait()` waits for actual
+resource release and is cancellable; `close()` retains its nonblocking semantics.
+`availability` is a snapshot exposing quarantine, not an admission guarantee.
+
+Completed runtime failures and guard rejections retain valid observed timings and
+warnings. Guard rejections include `rejectedBy:<CleanupRejection.rawValue>`.
+`CleanupLogic.rulesVersion` is checked against the manifest. Optional timing fields
+report prefix cache use, prompt/decode tokens and speculative rounds/drafted/accepted
+counts. Nil means unobserved. Timers do not wait for final worker statistics.
+
+MLX buffer-pool clearing is opt-in through `.mlx(vocabulary:clearBufferCache:)` and
+is process-global when enabled. The default does not clear another workload's pool.
+Vocabulary bounds are the host's responsibility: select a stable bounded subset;
+invalid vocabulary throws rather than silently dropping requested spelling rules.

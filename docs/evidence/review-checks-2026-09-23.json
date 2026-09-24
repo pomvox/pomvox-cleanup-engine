@@ -1,0 +1,172 @@
+{
+  "completedChecks": [
+    {
+      "name": "installer",
+      "exitCode": 0,
+      "seconds": 0.187
+    },
+    {
+      "name": "debug",
+      "exitCode": 0,
+      "seconds": 4.16
+    },
+    {
+      "name": "release",
+      "exitCode": 0,
+      "seconds": 6.405
+    },
+    {
+      "name": "lifecycle-1",
+      "exitCode": 0,
+      "seconds": 0.841
+    },
+    {
+      "name": "thread",
+      "exitCode": 0,
+      "seconds": 9.141
+    },
+    {
+      "name": "address",
+      "exitCode": 0,
+      "seconds": 5.03
+    }
+  ],
+  "modelTests": {
+    "tests": 16,
+    "failures": 0,
+    "skips": 0,
+    "network": "denied",
+    "log": "review-model-2026-09-23.txt",
+    "baselineFixtures": 24,
+    "additionalCoverage": "Composed/decomposed Unicode dictionary transitions and matching repeated cached/uncached requests"
+  },
+  "suiteTestsPerConfiguration": 108,
+  "lifecycleStressRepetitionsPassed": 20,
+  "lifecycleStressRun": [
+    {
+      "name": "installer",
+      "exitCode": 0,
+      "seconds": 0.183
+    },
+    {
+      "name": "debug",
+      "exitCode": 0,
+      "seconds": 16.532
+    },
+    {
+      "name": "release",
+      "exitCode": 0,
+      "seconds": 16.647
+    },
+    {
+      "name": "lifecycle-1",
+      "exitCode": 0,
+      "seconds": 0.783
+    },
+    {
+      "name": "lifecycle-2",
+      "exitCode": 0,
+      "seconds": 0.729
+    },
+    {
+      "name": "lifecycle-3",
+      "exitCode": 0,
+      "seconds": 0.73
+    },
+    {
+      "name": "lifecycle-4",
+      "exitCode": 0,
+      "seconds": 0.735
+    },
+    {
+      "name": "lifecycle-5",
+      "exitCode": 0,
+      "seconds": 0.731
+    },
+    {
+      "name": "lifecycle-6",
+      "exitCode": 0,
+      "seconds": 0.779
+    },
+    {
+      "name": "lifecycle-7",
+      "exitCode": 0,
+      "seconds": 0.776
+    },
+    {
+      "name": "lifecycle-8",
+      "exitCode": 0,
+      "seconds": 0.726
+    },
+    {
+      "name": "lifecycle-9",
+      "exitCode": 0,
+      "seconds": 0.733
+    },
+    {
+      "name": "lifecycle-10",
+      "exitCode": 0,
+      "seconds": 0.783
+    },
+    {
+      "name": "lifecycle-11",
+      "exitCode": 0,
+      "seconds": 0.839
+    },
+    {
+      "name": "lifecycle-12",
+      "exitCode": 0,
+      "seconds": 0.782
+    },
+    {
+      "name": "lifecycle-13",
+      "exitCode": 0,
+      "seconds": 0.843
+    },
+    {
+      "name": "lifecycle-14",
+      "exitCode": 0,
+      "seconds": 0.776
+    },
+    {
+      "name": "lifecycle-15",
+      "exitCode": 0,
+      "seconds": 0.84
+    },
+    {
+      "name": "lifecycle-16",
+      "exitCode": 0,
+      "seconds": 1.242
+    },
+    {
+      "name": "lifecycle-17",
+      "exitCode": 0,
+      "seconds": 0.977
+    },
+    {
+      "name": "lifecycle-18",
+      "exitCode": 0,
+      "seconds": 0.783
+    },
+    {
+      "name": "lifecycle-19",
+      "exitCode": 0,
+      "seconds": 0.778
+    },
+    {
+      "name": "lifecycle-20",
+      "exitCode": 0,
+      "seconds": 0.778
+    },
+    {
+      "name": "thread",
+      "exitCode": 0,
+      "seconds": 21.903
+    },
+    {
+      "name": "address",
+      "exitCode": 0,
+      "seconds": 17.899
+    }
+  ]
+}

@@ -32,6 +32,7 @@ public struct ValidatedPack: Sendable {
     public let directory: URL
     public let manifest: PackManifest
     public let digest: String
+    let fileIdentity: [String: String]
 }
 
 public enum PackLoader {
@@ -41,6 +42,7 @@ public enum PackLoader {
     public static func validate(directory: URL) throws -> ValidatedPack {
         guard directory.isFileURL else { throw CleanupError.invalidPack("a local directory is required") }
         let root = directory.standardizedFileURL.resolvingSymlinksInPath()
+        let identity = try fileIdentity(root)
         let manifestURL = root.appendingPathComponent("pack.json")
         var data = Data()
         try readRegularFile(manifestURL, limit: 65_536) { data.append($0) }
@@ -56,7 +58,7 @@ public enum PackLoader {
         let manifest = try JSONDecoder().decode(PackManifest.self, from: data)
         guard manifest.schemaVersion == 1, manifest.runtime == runtimeVersion,
               manifest.prompt == "simplewords-frozen-v2", manifest.quantization == "8bit",
-              manifest.rules == ["pomvox-guards-v0.2.8"],
+              manifest.rules == [CleanupLogic.rulesVersion],
               manifest.capabilities == ["vocabulary"], manifest.languages == ["en"] else {
             throw CleanupError.incompatible("unsupported schema, runtime, prompt, settings, rules, or language")
         }
@@ -113,8 +115,34 @@ public enum PackLoader {
               !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw CleanupError.invalidPack("empty frozen prompt")
         }
+        guard try fileIdentity(root) == identity else { throw CleanupError.invalidPack("pack changed during validation") }
         return ValidatedPack(directory: root, manifest: manifest,
-                             digest: SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined())
+                             digest: SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined(), fileIdentity: identity)
+    }
+
+    /// Process-local reuse only. Changed files require a fresh full validation.
+    /// This relies on the same caller-owned, immutable filesystem trust boundary as open.
+    public static func revalidate(_ pack: ValidatedPack) throws -> ValidatedPack {
+        try Task.checkCancellation()
+        guard try fileIdentity(pack.directory) == pack.fileIdentity else {
+            throw CleanupError.invalidPack("validated pack changed; perform a fresh validation")
+        }
+        return pack
+    }
+
+    static func fileIdentity(_ root: URL) throws -> [String: String] {
+        var result: [String: String] = [:]
+        for name in try FileManager.default.contentsOfDirectory(atPath: root.path) {
+            var value = stat()
+            guard lstat(root.appendingPathComponent(name).path, &value) == 0,
+                  (value.st_mode & S_IFMT) == S_IFREG else {
+                throw CleanupError.invalidPack("pack must contain regular files")
+            }
+            result[name] = "\(value.st_dev):\(value.st_ino):\(value.st_mode):\(value.st_size):"
+                + "\(value.st_mtimespec.tv_sec):\(value.st_mtimespec.tv_nsec):"
+                + "\(value.st_ctimespec.tv_sec):\(value.st_ctimespec.tv_nsec)"
+        }
+        return result
     }
 
     public static func hash(_ url: URL) throws -> String {
