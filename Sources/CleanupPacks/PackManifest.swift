@@ -26,6 +26,10 @@ public struct PackManifest: Codable, Sendable {
     public let artifacts: [Artifact]
     public let limitations: [String]
     public let evidence: String
+    /// Schema 2 only. Schema 1 packs have the frozen baseline's capabilities.
+    public let capabilitiesDetail: PackCapabilities?
+
+    public var declaredCapabilities: PackCapabilities { capabilitiesDetail ?? .frozenBaseline }
 }
 
 public struct ValidatedPack: Sendable {
@@ -33,6 +37,9 @@ public struct ValidatedPack: Sendable {
     public let manifest: PackManifest
     public let digest: String
     let fileIdentity: [String: String]
+
+    /// Known before open: what this pack supports.
+    public var capabilities: PackCapabilities { manifest.declaredCapabilities }
 }
 
 public enum PackLoader {
@@ -49,14 +56,29 @@ public enum PackLoader {
         let keys: Set<String> = ["schemaVersion", "id", "version", "publisher", "license", "licenseURL",
             "modelID", "modelRevision", "runtime", "prompt", "quantization", "languages", "capabilities",
             "rules", "artifacts", "limitations", "evidence"]
+        // Schema 2 adds exactly one required block; schema 1 is unchanged.
         guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              Set(object.keys) == keys,
+              // Type is enforced by the decoder and the schemaVersion match below.
+              let schema = object["schemaVersion"] as? Int, schema == 1 || schema == 2,
+              Set(object.keys) == (schema == 2 ? keys.union(["capabilitiesDetail"]) : keys),
               let artifacts = object["artifacts"] as? [[String: Any]],
               artifacts.allSatisfy({ Set($0.keys) == ["path", "bytes", "sha256"] }) else {
             throw CleanupError.invalidPack("unknown or missing manifest field")
         }
+        if schema == 2 {
+            guard let detail = object["capabilitiesDetail"] as? [String: Any],
+                  Set(detail.keys) == ["styles", "speculativeSwitch", "auxiliaryGeneration",
+                                       "minResidentMemoryBytes", "vocabulary"],
+                  let vocabulary = detail["vocabulary"] as? [String: Any],
+                  Set(vocabulary.keys) == ["maxTerms", "maxTermBytes", "maxTotalBytes"] else {
+                throw CleanupError.invalidPack("unknown or missing capabilities field")
+            }
+        }
         let manifest = try JSONDecoder().decode(PackManifest.self, from: data)
-        guard manifest.schemaVersion == 1, manifest.runtime == runtimeVersion,
+        if let detail = manifest.capabilitiesDetail {
+            try validateCapabilities(detail)
+        }
+        guard manifest.schemaVersion == schema, manifest.runtime == runtimeVersion,
               manifest.prompt == "simplewords-frozen-v2", manifest.quantization == "8bit",
               manifest.rules == [CleanupLogic.rulesVersion],
               manifest.capabilities == ["vocabulary"], manifest.languages == ["en"] else {
@@ -118,6 +140,20 @@ public enum PackLoader {
         guard try fileIdentity(root) == identity else { throw CleanupError.invalidPack("pack changed during validation") }
         return ValidatedPack(directory: root, manifest: manifest,
                              digest: SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined(), fileIdentity: identity)
+    }
+
+    static func validateCapabilities(_ detail: PackCapabilities) throws {
+        let request = VocabularyLimits.request, limits = detail.vocabulary
+        guard (1...request.maxTerms).contains(limits.maxTerms),
+              (1...request.maxTermBytes).contains(limits.maxTermBytes),
+              (1...request.maxTotalBytes).contains(limits.maxTotalBytes),
+              detail.minResidentMemoryBytes.map({ (1...(1 << 40)).contains($0) }) ?? true else {
+            throw CleanupError.invalidPack("capability limits must be positive and within the request limits")
+        }
+        // This runtime has a frozen prompt and no host speculative or auxiliary controls.
+        guard detail.styles.isEmpty, !detail.speculativeSwitch, !detail.auxiliaryGeneration else {
+            throw CleanupError.incompatible("pack declares styles, a speculative switch or auxiliary generation this runtime does not support")
+        }
     }
 
     /// Process-local reuse only. Changed files require a fresh full validation.

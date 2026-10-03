@@ -8,6 +8,8 @@ Requests permit 16,384 UTF-8 bytes of text; 64 vocabulary terms, 128 bytes each 
 
 Preparation hashes local artifacts in chunks, loads using the directory-only model/tokenizer APIs, performs sampling-free prefix prefill, then generates a warmup. No fallback to a different model is possible. The preview only enables the optimized runtime for its exact supported artifact hashes. Opening fails if prefix/warmup preparation cannot complete.
 
+A pack's capabilities (styles, speculative switch, auxiliary generation, minimum resident memory, vocabulary limits) are available before open as `ValidatedPack.capabilities` and after as `Cleaner.capabilities`, so a host can avoid offering a control the pack would refuse or ignore. Refusing unsupported settings at request time is unchanged. See [schema 2](packs.md#schema-2-capabilities).
+
 ## Worker and request lifetime
 
 One worker runs per cleaner and at most two requests queue. MLX also takes a process-wide resident-model lease, so another cleaner cannot allocate a second model until the first closes. This is a conservative preview constraint, not shared model pooling or a system-wide GPU lock.

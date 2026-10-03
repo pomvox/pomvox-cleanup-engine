@@ -1,4 +1,4 @@
-# Installed pack format — schema 1
+# Installed pack format — schemas 1 and 2
 
 A pack is a flat, immutable directory containing `pack.json` and seven artifact files. See [the baseline manifest](../packs/simplewords-v3/pack.json) for a complete machine-readable instance.
 
@@ -15,6 +15,22 @@ A pack is a flat, immutable directory containing `pack.json` and seven artifact 
 The Swift `PackManifest` Codable type and `PackLoader` are the schema implementation. Unknown top-level or artifact fields, schema/runtime mismatches, unsupported rules/capabilities, duplicate or unexpected paths, extra files/directories, symlinks, oversized files, and checksum mismatches fail validation. The weight index may reference only the verified `model.safetensors`. Custom tokenizer code is unsupported. No executable pack plugins or model fallback exist.
 
 The manifest digest is SHA-256 over the exact manifest bytes. It transitively identifies the weights, tokenizer, chat template, model config and frozen prompt. Hash verification proves consistency, not publisher authenticity. Only caller-trusted developer installations are supported; signed installation and distribution are a later milestone.
+
+## Schema 2: capabilities
+
+Schema 2 is schema 1 plus one required top-level object, `capabilitiesDetail`. Schema 1 is unchanged and still accepted, so existing installations keep validating with the same manifest digest. A `capabilitiesDetail` key in a schema 1 manifest fails validation.
+
+| Field | Meaning | Rule in this runtime |
+| --- | --- | --- |
+| `styles` | Style names a request may select | Must be empty (frozen prompt) |
+| `speculativeSwitch` | Whether a host may toggle speculative decoding | Must be `false` |
+| `auxiliaryGeneration` | Whether the pack offers auxiliary generation | Must be `false` |
+| `minResidentMemoryBytes` | Minimum resident memory, bytes | `null` (not measured) or 1 B to 1 TiB |
+| `vocabulary` | `maxTerms`, `maxTermBytes`, `maxTotalBytes` | Each positive and no looser than the request limits (64, 128, 2,048) |
+
+Unknown or missing keys at either level fail validation. A pack declaring a style, a speculative switch or auxiliary generation is refused as incompatible, because this runtime cannot honor them. A pack may declare stricter vocabulary limits; `Cleaner` then refuses a request over them before the model runs.
+
+Hosts read the answer as `ValidatedPack.capabilities` before open and `Cleaner.capabilities` after. A schema 1 pack reports `PackCapabilities.frozenBaseline`: no styles, no speculative switch, no auxiliary generation, memory not measured, and the request vocabulary limits. `simplewords-v3` is schema 1; its manifest is unchanged.
 
 ## Baseline
 
