@@ -26,6 +26,8 @@ Hybrid recurrent layers legitimately report zero offsets and cannot trim rejecte
 
 Ordinary failures preserve input bytes. Empty input is unchanged without inference. Cancellation throws, including cancellation racing completion. The host must also prevent delivery from superseded sessions.
 
+Requests may opt into deterministic post-transforms (`transforms: [.spokenLayout]`, off by default). `spokenLayout` turns dictated "new line", "new paragraph" and "bullet" into layout, except where a modifier makes the phrase content ("a new line of products", "silver bullet"). It runs on accepted model output, so a cleaned or unchanged result's edits and status include it. It never touches a fallback: a fallback is still the exact input with no edits. A host that wants the commands honored on a fallback too calls `SpokenLayout.apply` or `SpokenLayout.edits(from:)` on that text itself. Provenance settings record an applied transform as `transforms: spokenLayout`. The cloud client applies transforms on the client and does not send them.
+
 Edits are ordered, non-overlapping scalar-boundary ranges measured in original UTF-8 bytes. A single minimal contiguous replacement avoids quadratic diff work and preserves decomposed Unicode. It can include an unchanged interior span. No normalization occurs.
 
 Provenance includes the pack manifest digest (which covers every artifact digest), model revision, runtime route and applied settings. Vocabulary is represented by a hash of its ordered JSON encoding; the diagnostic does not contain the words. Prefix/tokenizer identities are transitively pinned by the manifest. Hashes are identifiers, not anonymization promises.
