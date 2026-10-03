@@ -162,7 +162,7 @@ public actor CleanupSession: Cleaning {
         timings.validationMS = validationStart.duration(to: .now).milliseconds
         let text: String
         switch evaluation {
-        case .success(let accepted): text = accepted
+        case .success(let accepted): text = entry.request.transforms.apply(to: accepted)
         case .failure(let reason): return failed(.rejected, warning: "rejectedBy:" + reason.rawValue)
         }
         let diffStart = ContinuousClock.now
@@ -171,7 +171,8 @@ public actor CleanupSession: Cleaning {
         timings.totalMS = entry.entered.duration(to: .now).milliseconds
         if ContinuousClock.now >= entry.deadline { return failed(.timedOut) }
         return CleanupResult(text: text, edits: edits, status: edits.isEmpty ? .unchanged : .cleaned,
-                             provenance: provenanceFor(entry), timings: timings, warnings: output.warnings)
+                             provenance: provenanceFor(entry).recording(entry.request.transforms),
+                             timings: timings, warnings: output.warnings)
     }
 
     private func provenanceFor(_ entry: Entry) -> Provenance {

@@ -27,6 +27,31 @@ public enum CleanupStatus: Codable, Equatable, Sendable {
     case fallback(FallbackReason)
 }
 
+/// Deterministic post-transforms a host opts into. Applied to accepted model
+/// output only; a fallback is always the exact input with no edits.
+public struct CleanupTransforms: OptionSet, Hashable, Sendable {
+    public let rawValue: UInt8
+    public init(rawValue: UInt8) { self.rawValue = rawValue }
+
+    /// Spoken "new line", "new paragraph" and "bullet" become layout (`SpokenLayout`).
+    public static let spokenLayout = CleanupTransforms(rawValue: 1 << 0)
+
+    public func apply(to text: String) -> String {
+        contains(.spokenLayout) ? SpokenLayout.apply(text) : text
+    }
+}
+
+extension Provenance {
+    /// Records applied transforms alongside the other applied settings; unchanged when none.
+    public func recording(_ transforms: CleanupTransforms) -> Provenance {
+        guard transforms.contains(.spokenLayout) else { return self }
+        var settings = self.settings
+        settings["transforms"] = "spokenLayout"
+        return Provenance(packID: packID, packVersion: packVersion, artifactDigest: artifactDigest,
+                          modelRevision: modelRevision, runtime: runtime, route: route, settings: settings)
+    }
+}
+
 public struct CleanupRequest: Sendable {
     public let text: String
     public let vocabulary: [String]
@@ -34,14 +59,18 @@ public struct CleanupRequest: Sendable {
     public let context: String
     public let settings: [String: String]
     public let deadline: Duration?
+    /// Off by default. Not sent to a cloud endpoint; the client applies them.
+    public let transforms: CleanupTransforms
 
     public init(_ text: String, vocabulary: [String] = [], context: String = "",
-                settings: [String: String] = [:], deadline: Duration? = nil) {
+                settings: [String: String] = [:], deadline: Duration? = nil,
+                transforms: CleanupTransforms = []) {
         self.text = text
         self.vocabulary = vocabulary
         self.context = context
         self.settings = settings
         self.deadline = deadline
+        self.transforms = transforms
     }
 
     public func validate() throws {

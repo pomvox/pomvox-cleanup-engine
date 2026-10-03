@@ -110,7 +110,18 @@ public actor CloudCleaner: Cleaning {
             }
         } onCancel: { Task { await self.expire(id: id, cancelled: true) } }
         try Task.checkCancellation()
-        return result
+        return Self.transformed(result, of: request)
+    }
+
+    /// Transforms are client-side: the wire request is unchanged, and a fallback stays exact input.
+    private static func transformed(_ result: CleanupResult, of request: CleanupRequest) -> CleanupResult {
+        if case .fallback = result.status { return result }
+        if request.transforms.isEmpty { return result }
+        let text = request.transforms.apply(to: result.text)
+        let edits = text.utf8.elementsEqual(result.text.utf8) ? result.edits : TextEdit.between(request.text, and: text)
+        return CleanupResult(text: text, edits: edits, status: edits.isEmpty ? .unchanged : .cleaned,
+                             provenance: result.provenance.recording(request.transforms),
+                             timings: result.timings, warnings: result.warnings)
     }
 
     private static func send(_ input: CleanupRequest, id: UUID, deadline: ContinuousClock.Instant,

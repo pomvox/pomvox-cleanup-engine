@@ -56,6 +56,29 @@ final class CloudTests: XCTestCase, @unchecked Sendable {
         }
     }
 
+    func testTransformsAreClientSideAndNeverTouchAFallback() async throws {
+        let (server, port) = try server()
+        defer { server.terminate(); server.waitUntilExit() }
+        let raw = "hi john new line thanks"
+        let request = CleanupRequest(raw, vocabulary: ["Pomvox"], context: "explicit test context",
+                                     settings: ["style": "test"], deadline: .seconds(2), transforms: [.spokenLayout])
+        for (path, expected) in [("clean", "hi john\nThanks"), ("fallback", raw)] {
+            let cleaner = try CloudCleaner.connect(endpoint: URL(string: "http://127.0.0.1:\(port)/\(path)")!,
+                credentials: Credentials(), pack: RemotePack(id: "test", version: "1.0.0"))
+            let result = try await cleaner.clean(request)
+            XCTAssertEqual(result.text, expected, path)
+            XCTAssertEqual(try TextEdit.applying(result.edits, to: raw), result.text, path)
+            if path == "fallback" {
+                XCTAssertTrue(result.edits.isEmpty)
+                XCTAssertNil(result.provenance.settings["transforms"])
+            } else {
+                XCTAssertEqual(result.status, .cleaned)
+                XCTAssertEqual(result.provenance.settings["transforms"], "spokenLayout")
+            }
+            await cleaner.close()
+        }
+    }
+
     func testTransportDeadlineAndCancellation() async throws {
         let (server, port) = try server()
         defer { server.terminate(); server.waitUntilExit() }
