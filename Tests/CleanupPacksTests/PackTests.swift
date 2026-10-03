@@ -343,3 +343,93 @@ extension PackTests {
         try await second.closeAndWait()
     }
 }
+
+// MARK: - Capabilities (schema 2)
+
+extension PackTests {
+    private func capabilitiesDetail(_ override: (inout [String: Any]) -> Void = { _ in }) -> [String: Any] {
+        var detail: [String: Any] = [
+            "styles": [String](), "speculativeSwitch": false, "auxiliaryGeneration": false,
+            "minResidentMemoryBytes": 3_000_000_000,
+            "vocabulary": ["maxTerms": 32, "maxTermBytes": 64, "maxTotalBytes": 1_024]]
+        override(&detail)
+        return detail
+    }
+
+    private func schema2(_ root: URL, _ override: (inout [String: Any]) -> Void = { _ in }) throws {
+        let detail = capabilitiesDetail(override)
+        try mutateManifest(root) { $0["schemaVersion"] = 2; $0["capabilitiesDetail"] = detail }
+    }
+
+    func testSchema1ReportsTheFrozenBaseline() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let pack = try PackLoader.validate(directory: root)
+        XCTAssertNil(pack.manifest.capabilitiesDetail)
+        XCTAssertEqual(pack.capabilities, .frozenBaseline)
+    }
+
+    func testSchema2CapabilitiesAreReportedBeforeAndAfterOpen() async throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        try schema2(root)
+        let expected = PackCapabilities(styles: [], speculativeSwitch: false, auxiliaryGeneration: false,
+            minResidentMemoryBytes: 3_000_000_000,
+            vocabulary: VocabularyLimits(maxTerms: 32, maxTermBytes: 64, maxTotalBytes: 1_024))
+        let pack = try PackLoader.validate(directory: root)
+        XCTAssertEqual(pack.capabilities, expected)
+        let runtime = SetupRuntime()
+        let cleaner = try await Cleaner.open(pack: .validated(pack), runtime: RuntimeFactory(name: "test-runtime") { _ in runtime })
+        XCTAssertEqual(cleaner.capabilities, expected)
+        // A stricter pack limit is enforced before the model is touched.
+        let tooMany = (0..<33).map { "term\($0)" }
+        do { _ = try await cleaner.clean(CleanupRequest("hello", vocabulary: tooMany)); XCTFail("over the pack limit") }
+        catch CleanupError.incompatible {}
+        let ok = try await cleaner.clean(CleanupRequest("hello", vocabulary: ["Pomvox"]))
+        XCTAssertEqual(ok.status, .unchanged)
+        let calls = await runtime.state().0
+        XCTAssertEqual(calls, 1)
+        await cleaner.close()
+    }
+
+    func testSchema2NullMemoryMeansNotMeasured() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        try schema2(root) { $0["minResidentMemoryBytes"] = NSNull() }
+        XCTAssertNil(try PackLoader.validate(directory: root).capabilities.minResidentMemoryBytes)
+    }
+
+    func testCapabilitiesSchemaMatrix() throws {
+        let invalid: [(String, (inout [String: Any]) -> Void)] = [
+            ("unknown key", { $0["extra"] = true }),
+            ("missing key", { $0.removeValue(forKey: "styles") }),
+            ("unknown vocabulary key", { $0["vocabulary"] = ["maxTerms": 1, "maxTermBytes": 1, "maxTotalBytes": 1, "x": 1] }),
+            ("looser than request", { $0["vocabulary"] = ["maxTerms": 65, "maxTermBytes": 128, "maxTotalBytes": 2_048] }),
+            ("zero limit", { $0["vocabulary"] = ["maxTerms": 0, "maxTermBytes": 128, "maxTotalBytes": 2_048] }),
+            ("negative memory", { $0["minResidentMemoryBytes"] = -1 }),
+            ("styles", { $0["styles"] = ["polish"] }),
+            ("speculative switch", { $0["speculativeSwitch"] = true }),
+            ("auxiliary generation", { $0["auxiliaryGeneration"] = true }),
+        ]
+        for (name, mutate) in invalid {
+            let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+            try schema2(root, mutate)
+            XCTAssertThrowsError(try PackLoader.validate(directory: root), name)
+        }
+        // Schema 1 with the block, and schema 2 without it.
+        let schema1WithDetail = try fixture(); defer { try? FileManager.default.removeItem(at: schema1WithDetail) }
+        let detail = capabilitiesDetail()
+        try mutateManifest(schema1WithDetail) { $0["capabilitiesDetail"] = detail }
+        XCTAssertThrowsError(try PackLoader.validate(directory: schema1WithDetail))
+        let schema2Without = try fixture(); defer { try? FileManager.default.removeItem(at: schema2Without) }
+        try mutateManifest(schema2Without) { $0["schemaVersion"] = 2 }
+        XCTAssertThrowsError(try PackLoader.validate(directory: schema2Without))
+    }
+
+    /// Pins the wire shape hosts and pack authors depend on.
+    func testFrozenBaselineCapabilitiesEncoding() throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let json = String(decoding: try encoder.encode(PackCapabilities.frozenBaseline), as: UTF8.self)
+        XCTAssertEqual(json, #"{"auxiliaryGeneration":false,"speculativeSwitch":false,"styles":[],"#
+            + #""vocabulary":{"maxTermBytes":128,"maxTerms":64,"maxTotalBytes":2048}}"#)
+        XCTAssertEqual(VocabularyLimits.request, VocabularyLimits(maxTerms: 64, maxTermBytes: 128, maxTotalBytes: 2_048))
+    }
+}
