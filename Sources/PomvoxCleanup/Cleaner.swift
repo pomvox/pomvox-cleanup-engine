@@ -54,8 +54,14 @@ public final class Cleaner: Cleaning, Sendable {
         guard request.context.isEmpty, request.settings.isEmpty else {
             throw CleanupError.incompatible("the frozen baseline supports vocabulary, not context or style settings")
         }
+        guard capabilities.vocabulary.admits(request.vocabulary) else {
+            throw CleanupError.incompatible("vocabulary exceeds this pack's declared limits")
+        }
         return try await session.clean(request)
     }
+
+    /// What the opened pack supports; the same answer as `pack.capabilities` before open.
+    public var capabilities: PackCapabilities { pack.capabilities }
 
     /// A snapshot, not an admission reservation. Never start a second model to bypass quarantine.
     public var availability: CleanerAvailability { get async { await session.availability } }

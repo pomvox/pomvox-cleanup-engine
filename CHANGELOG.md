@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add a capability query (`ValidatedPack.capabilities`, `Cleaner.capabilities`) and an optional pack schema 2 that declares it. Schema 1 packs, including `simplewords-v3`, are unchanged and report the frozen baseline.
 - Add an opt-in spoken-layout transform (`CleanupRequest(transforms: [.spokenLayout])`), moved from the Pomvox app with its tests. It applies to accepted output only; fallbacks stay exact input, and `SpokenLayout.apply` is public for hosts that want it there too.
 
 ## 0.1.0-beta.2 — 2026-09-24

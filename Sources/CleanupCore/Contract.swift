@@ -52,6 +52,54 @@ extension Provenance {
     }
 }
 
+/// Vocabulary bounds. `request` is what any request may carry; a pack may declare
+/// stricter limits in its capabilities, never looser ones.
+public struct VocabularyLimits: Codable, Equatable, Sendable {
+    public let maxTerms: Int
+    public let maxTermBytes: Int
+    public let maxTotalBytes: Int
+
+    public init(maxTerms: Int, maxTermBytes: Int, maxTotalBytes: Int) {
+        self.maxTerms = maxTerms; self.maxTermBytes = maxTermBytes; self.maxTotalBytes = maxTotalBytes
+    }
+
+    public static let request = VocabularyLimits(maxTerms: 64, maxTermBytes: 128, maxTotalBytes: 2_048)
+
+    /// Nonempty single-line terms within every bound.
+    public func admits(_ vocabulary: [String]) -> Bool {
+        vocabulary.count <= maxTerms
+            && vocabulary.allSatisfy({ !$0.isEmpty && $0.utf8.count <= maxTermBytes && !$0.contains(where: { $0.isNewline }) })
+            && vocabulary.reduce(0, { $0 + $1.utf8.count }) <= maxTotalBytes
+    }
+}
+
+/// What a pack supports, so a host can avoid offering what would be refused or ignored.
+/// Answered before open (`ValidatedPack.capabilities`) and after (`Cleaner.capabilities`).
+public struct PackCapabilities: Codable, Equatable, Sendable {
+    /// Style names a request may select. Empty: the prompt is frozen.
+    public let styles: [String]
+    /// Whether a host may switch speculative decoding on or off.
+    public let speculativeSwitch: Bool
+    /// Whether the pack offers auxiliary generation (for example dictionary variants).
+    public let auxiliaryGeneration: Bool
+    /// Minimum resident memory for the loaded pack, in bytes. Nil: not measured.
+    public let minResidentMemoryBytes: Int?
+    public let vocabulary: VocabularyLimits
+
+    public init(styles: [String], speculativeSwitch: Bool, auxiliaryGeneration: Bool,
+                minResidentMemoryBytes: Int?, vocabulary: VocabularyLimits) {
+        self.styles = styles; self.speculativeSwitch = speculativeSwitch
+        self.auxiliaryGeneration = auxiliaryGeneration
+        self.minResidentMemoryBytes = minResidentMemoryBytes; self.vocabulary = vocabulary
+    }
+
+    /// The frozen-prompt baseline every schema-1 pack (including simplewords-v3) has.
+    /// Memory is not measured yet.
+    public static let frozenBaseline = PackCapabilities(
+        styles: [], speculativeSwitch: false, auxiliaryGeneration: false,
+        minResidentMemoryBytes: nil, vocabulary: .request)
+}
+
 public struct CleanupRequest: Sendable {
     public let text: String
     public let vocabulary: [String]
@@ -74,9 +122,8 @@ public struct CleanupRequest: Sendable {
     }
 
     public func validate() throws {
-        guard text.utf8.count <= 16_384, vocabulary.count <= 64,
-              vocabulary.allSatisfy({ !$0.isEmpty && $0.utf8.count <= 128 && !$0.contains(where: { $0.isNewline }) }),
-              vocabulary.reduce(0, { $0 + $1.utf8.count }) <= 2_048,
+        let limits = VocabularyLimits.request
+        guard text.utf8.count <= 16_384, limits.admits(vocabulary),
               context.utf8.count <= 2_048, settings.count <= 16,
               settings.allSatisfy({ $0.key.utf8.count <= 64 && $0.value.utf8.count <= 128 })
         else { throw CleanupError.invalidRequest("request exceeds documented limits") }
