@@ -10,6 +10,17 @@ Preparation hashes local artifacts in chunks, loads using the directory-only mod
 
 A pack's capabilities (styles, speculative switch, auxiliary generation, minimum resident memory, vocabulary limits, and the guard rules identity) are available before open as `ValidatedPack.capabilities` and after as `Cleaner.capabilities`, so a host can avoid offering a control the pack would refuse or ignore. Refusing unsupported settings at request time is unchanged. See [schema 2](packs.md#schema-2-capabilities).
 
+### Admission limit and output cap
+
+The two limits are one pair. A host reads the admission side from the capability query; the output side is enforced by the runtime.
+
+| Limit | Value | Enforced by | Unit | Read it from |
+| --- | --- | --- | --- | --- |
+| Admission | 16,384 | `CleanupRequest.validate()`, before queueing | UTF-8 bytes of request text | `capabilities.maxTextBytes` (`CleanupRequest.maxTextBytes`) |
+| Output cap | `max(64, min(2 × input tokens, 1,024))` | `Runtime/MLX` decoding | model tokens | not exposed; depends on the tokenizer |
+
+They are not yet consistent. Admission does not check that an acceptable output fits the cap. The lower length guard needs at least 0.30 × the input's characters (0.15 with a correction marker), up to about 4,900 characters at the admission limit. Whether that fits in 1,024 tokens depends on the tokenizer. A request whose output does not fit ends as `.fallback(.tokenLimit)` (or `.timedOut`) with the exact input bytes, but only after decoding until the cap or the deadline. Words are never lost, but model time is. The core package cannot reject these requests at admission: deciding "cannot fit" means turning a character floor into a token count, which needs the pack's tokenizer. The admission-side check belongs to the runtime and is tracked by #13. The cap value itself is unchanged.
+
 ## Worker and request lifetime
 
 One worker runs per cleaner and at most two requests queue. MLX also takes a process-wide resident-model lease, so another cleaner cannot allocate a second model until the first closes. This is a conservative preview constraint, not shared model pooling or a system-wide GPU lock.

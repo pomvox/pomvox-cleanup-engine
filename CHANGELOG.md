@@ -6,6 +6,7 @@
 - Add `CleanupBudgetPolicy`, a length-sized deadline helper moved from the Pomvox app with its tests. It is opt-in: the default request budget is unchanged.
 - Add a capability query (`ValidatedPack.capabilities`, `Cleaner.capabilities`) and an optional pack schema 2 that declares it. Schema 1 packs, including `simplewords-v3`, are unchanged and report the frozen baseline.
 - Add an opt-in spoken-layout transform (`CleanupRequest(transforms: [.spokenLayout])`), moved from the Pomvox app with its tests. It applies to accepted output only; fallbacks stay exact input, and `SpokenLayout.apply` is public for hosts that want it there too.
+- Report the request text admission limit as `PackCapabilities.maxTextBytes` (`CleanupRequest.maxTextBytes`, 16,384 UTF-8 bytes, unchanged), and document it with the runtime's output cap as one pair in the contract guide. Requests that cannot fit the output cap are not yet rejected at admission; that check needs the tokenizer (#13).
 
 ## 0.1.0-beta.2 — 2026-09-24
 

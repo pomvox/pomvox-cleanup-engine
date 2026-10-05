@@ -86,6 +86,11 @@ public struct PackCapabilities: Codable, Equatable, Sendable {
     public let minResidentMemoryBytes: Int?
     public let vocabulary: VocabularyLimits
 
+    /// The admission limit for request text, in UTF-8 bytes (`CleanupRequest.maxTextBytes`).
+    /// Admission only: it does not promise the output fits the runtime's output cap;
+    /// see the contract guide. Not encoded, so the pack schema is unchanged.
+    public var maxTextBytes: Int { CleanupRequest.maxTextBytes }
+
     public init(styles: [String], speculativeSwitch: Bool, auxiliaryGeneration: Bool,
                 minResidentMemoryBytes: Int?, vocabulary: VocabularyLimits) {
         self.styles = styles; self.speculativeSwitch = speculativeSwitch
@@ -115,6 +120,9 @@ public struct CleanupRequest: Sendable {
     /// Off by default. Not sent to a cloud endpoint; the client applies them.
     public let transforms: CleanupTransforms
 
+    /// Longest admitted request text, in UTF-8 bytes. Also `PackCapabilities.maxTextBytes`.
+    public static let maxTextBytes = 16_384
+
     public init(_ text: String, vocabulary: [String] = [], context: String = "",
                 settings: [String: String] = [:], deadline: Duration? = nil,
                 transforms: CleanupTransforms = []) {
@@ -128,7 +136,7 @@ public struct CleanupRequest: Sendable {
 
     public func validate() throws {
         let limits = VocabularyLimits.request
-        guard text.utf8.count <= 16_384, limits.admits(vocabulary),
+        guard text.utf8.count <= Self.maxTextBytes, limits.admits(vocabulary),
               context.utf8.count <= 2_048, settings.count <= 16,
               settings.allSatisfy({ $0.key.utf8.count <= 64 && $0.value.utf8.count <= 128 })
         else { throw CleanupError.invalidRequest("request exceeds documented limits") }
