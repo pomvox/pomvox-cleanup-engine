@@ -98,6 +98,11 @@ public struct PackCapabilities: Codable, Equatable, Sendable {
     public static let frozenBaseline = PackCapabilities(
         styles: [], speculativeSwitch: false, auxiliaryGeneration: false,
         minResidentMemoryBytes: nil, vocabulary: .request)
+
+    /// The guard set that accepts or rejects this runtime's output, so a host can log
+    /// it next to `rejectedBy:<reason>`. Not declared by the pack: a manifest's `rules`
+    /// must already equal it to open. Not encoded, so the pack schema is unchanged.
+    public var guardRules: String { CleanupLogic.rulesVersion }
 }
 
 public struct CleanupRequest: Sendable {

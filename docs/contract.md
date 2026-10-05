@@ -8,7 +8,7 @@ Requests permit 16,384 UTF-8 bytes of text; 64 vocabulary terms, 128 bytes each 
 
 Preparation hashes local artifacts in chunks, loads using the directory-only model/tokenizer APIs, performs sampling-free prefix prefill, then generates a warmup. No fallback to a different model is possible. The preview only enables the optimized runtime for its exact supported artifact hashes. Opening fails if prefix/warmup preparation cannot complete.
 
-A pack's capabilities (styles, speculative switch, auxiliary generation, minimum resident memory, vocabulary limits) are available before open as `ValidatedPack.capabilities` and after as `Cleaner.capabilities`, so a host can avoid offering a control the pack would refuse or ignore. Refusing unsupported settings at request time is unchanged. See [schema 2](packs.md#schema-2-capabilities).
+A pack's capabilities (styles, speculative switch, auxiliary generation, minimum resident memory, vocabulary limits, and the guard rules identity) are available before open as `ValidatedPack.capabilities` and after as `Cleaner.capabilities`, so a host can avoid offering a control the pack would refuse or ignore. Refusing unsupported settings at request time is unchanged. See [schema 2](packs.md#schema-2-capabilities).
 
 ## Worker and request lifetime
 
@@ -52,7 +52,11 @@ resource release and is cancellable; `close()` retains its nonblocking semantics
 
 Completed runtime failures and guard rejections retain valid observed timings and
 warnings. Guard rejections include `rejectedBy:<CleanupRejection.rawValue>`.
-`CleanupLogic.rulesVersion` is checked against the manifest. Optional timing fields
+`CleanupLogic.rulesVersion` is checked against the manifest and reported as
+`capabilities.guardRules`, so a host can log which guard set produced a rejection.
+This repository owns the guard specification: `GuardVectorTests` pins every app
+guard vector to its rejection reason, so a change that moves a rejection to a
+different guard fails. Optional timing fields
 report prefix cache use, prompt/decode tokens and speculative rounds/drafted/accepted
 counts. Nil means unobserved. Timers do not wait for final worker statistics.
 
