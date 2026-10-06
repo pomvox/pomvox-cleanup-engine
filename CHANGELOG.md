@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-beta.3 — 2026-10-05
+
 - Own the output-guard specification: every guard vector from the Pomvox app's `test_cleanup.py` and `CleanupLogicTests` is a table-driven case in `GuardVectorTests` that asserts the rejection reason. `PackCapabilities.guardRules` reports the guard set identity (`CleanupLogic.rulesVersion`) through the capability query. Guard behaviour is unchanged.
 - Add `CleanupBudgetPolicy`, a length-sized deadline helper moved from the Pomvox app with its tests. It is opt-in: the default request budget is unchanged.
 - Add a capability query (`ValidatedPack.capabilities`, `Cleaner.capabilities`) and an optional pack schema 2 that declares it. Schema 1 packs, including `simplewords-v3`, are unchanged and report the frozen baseline.
