@@ -97,6 +97,46 @@ behind it (the queue holds two; the third is `busy`). Timing is proportional
 to the number and length of turns; a figure for a given transcript comes from
 `TranscriptResult.elapsedMS` and the per-turn timings, not from this document.
 
+### Incremental cleaning and resuming
+
+`cleanIncrementally(_:options:resuming:)` runs the same loop as
+`clean(_:options:)`, but yields each turn's result as a `CleanedTurn` (index and
+`TurnResult`) as soon as it is final. Because it is the same loop, the yielded
+results are the ones the batch call returns. A host can show turns as they
+finish and save them as it goes.
+
+```swift
+let identity = try await cleaner.checkpointIdentity(for: transcript, options: options)
+var accepted = store.loadAcceptedTurns(for: identity) ?? []   // the host's persistence
+let resume = accepted.isEmpty ? nil : TranscriptCheckpoint(identity: identity, accepted: accepted)
+for try await cleaned in cleaner.cleanIncrementally(transcript, options: options, resuming: resume) {
+    accepted.append(cleaned.result)                             // cleaned.index == accepted.count - 1
+    store.save(TranscriptCheckpoint(identity: identity, accepted: accepted))
+}
+```
+
+A checkpoint holds the results accepted for turns `0..<n` and the identity they
+were made under. When resuming, the engine cleans and yields only turns `n...`.
+Before cleaning anything, it refuses a checkpoint unless every check passes:
+
+| Check | Refusal |
+| --- | --- |
+| Same transcript: turn count and a SHA-256 over every turn's speaker, UTF-8 text bytes and span. A canonically equivalent but differently encoded text is a different transcript. | `invalidRequest` |
+| Same output-affecting options: vocabulary, transforms, `turnBudget`, `turnBase` | `invalidRequest` |
+| Same pack: id, version and, for a local pack, manifest digest | `incompatible` |
+| Each accepted turn matches its transcript turn byte for byte. A fallback or unchanged result is the exact input with no edits, a cleaned result's edits rebuild its text, and a result's provenance names the same pack (or is `skipped` on a fallback). | `invalidRequest` |
+
+`overallDeadline` and `progress` are per call and not part of the identity. A
+resumed call's ceiling covers only the turns it cleans, and progress counts the
+accepted turns as done. A cleaner whose `packIdentity` is nil (a custom
+`Cleaning` that does not implement it) can stream but cannot resume:
+`checkpointIdentity` throws `incompatible`. `Cleaner` reports its manifest id,
+version and digest. `CloudCleaner` reports the remote pack's id and version.
+
+Cancelling the consuming task, or leaving the loop, cancels the turn in flight.
+That turn is never yielded, and turns already yielded stay final. The engine
+stores nothing: where and when checkpoints are saved is the host's decision.
+
 ## Notes
 
 `Notes.extract(from:)` runs no model. It produces:

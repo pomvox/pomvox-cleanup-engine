@@ -38,6 +38,9 @@ public actor CleanupSession: Cleaning {
     }
     private let runtime: any CleanupRuntime
     public let provenance: Provenance
+    public nonisolated var packIdentity: PackIdentity? {
+        PackIdentity(id: provenance.packID, version: provenance.packVersion, digest: provenance.artifactDigest)
+    }
     private let preparationMS: Double
     private let queueCapacity: Int
     private var entries: [UUID: Entry] = [:]

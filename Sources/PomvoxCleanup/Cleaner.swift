@@ -60,6 +60,10 @@ public final class Cleaner: Cleaning, Sendable {
         return try await session.clean(request)
     }
 
+    public var packIdentity: PackIdentity? {
+        PackIdentity(id: pack.manifest.id, version: pack.manifest.version, digest: pack.digest)
+    }
+
     /// What the opened pack supports; the same answer as `pack.capabilities` before open.
     public var capabilities: PackCapabilities { pack.capabilities }
 
