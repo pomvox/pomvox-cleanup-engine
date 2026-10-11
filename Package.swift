@@ -16,7 +16,7 @@ let package = Package(
         .target(name: "CleanupNotes", dependencies: ["CleanupCore"]),
         .target(name: "CleanupDiarization", dependencies: ["CleanupCore", "CleanupPacks"]),
         .target(name: "PomvoxCleanup", dependencies: ["CleanupCore", "CleanupPacks"]),
-        .target(name: "PomvoxCleanupCloud", dependencies: ["CleanupCore", "CleanupDiarization"]),
+        .target(name: "PomvoxCleanupCloud", dependencies: ["CleanupCore", "CleanupDiarization", "CleanupNotes"]),
         .target(name: "PomvoxAdapterExample", dependencies: ["PomvoxCleanup"], path: "Examples/PomvoxAdapter"),
         .testTarget(name: "CleanupCoreTests", dependencies: ["CleanupCore", "PomvoxCleanup", "PomvoxAdapterExample"]),
         .testTarget(name: "CleanupPacksTests", dependencies: ["CleanupPacks", "PomvoxCleanup"]),

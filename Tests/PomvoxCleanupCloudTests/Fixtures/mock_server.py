@@ -12,6 +12,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.headers.get('Content-Type') == 'audio/wav':
             return self.diarize()
         body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+        if 'turns' in body:
+            return self.notes(body)
         if (self.headers.get('Authorization') != 'Bearer test-only-token'
                 or self.headers.get('Idempotency-Key') != body['requestID']
                 or body['schemaVersion'] != 1 or not 0 < body['remainingMilliseconds'] <= 60000
@@ -86,6 +88,63 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(payload[1:])
             else:
                 self.wfile.write(payload)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def notes(self, body):
+        """Notes protocol v1 fixture: a fixed summary that cites the first and last turns."""
+        turns = body['turns']
+        if (self.headers.get('Authorization') != 'Bearer test-only-token'
+                or self.headers.get('Idempotency-Key') != body['requestID']
+                or body['schemaVersion'] != 1 or body['pack'] != {'id': 'notes-test', 'version': '1.0.0'}
+                or not 0 < body['remainingMilliseconds'] <= 600000
+                or body.get('style') not in (None, 'meeting')
+                or not turns or [t['index'] for t in turns] != list(range(len(turns)))):
+            self.send_error(400)
+            return
+        path = self.path.removeprefix('/n/')
+        if path == 'http500':
+            self.send_error(500)
+            return
+        if path == 'redirect':
+            self.send_response(302)
+            self.send_header('Location', 'https://example.org/never-follow')
+            self.end_headers()
+            return
+        if path == 'slow':
+            time.sleep(0.4)
+        last = len(turns) - 1
+        result = {
+            'summary': [{'text': 'The speakers planned the release and assigned the report.', 'turns': [0, last]}],
+            'actionItems': [{'text': 'Send the updated report by Friday.', 'turns': [min(1, last)]}],
+            'decisions': [], 'questions': [],
+            'provenance': {'packID': 'notes-test', 'packVersion': '1.0.0', 'artifactDigest': 'mock-digest',
+                           'modelRevision': 'mock-revision', 'runtime': 'loopback-mock', 'route': 'cloud', 'settings': {}},
+            'timings': {'preparationMS': 0, 'queueMS': 0, 'inferenceMS': 3, 'validationMS': 0, 'diffMS': 0,
+                        'totalMS': 7, 'budgetMS': body['remainingMilliseconds']},
+            'warnings': ['mock-only'],
+        }
+        response = {'schemaVersion': 1, 'requestID': body['requestID'], 'result': result}
+        if path == 'wrongid': response['requestID'] = '00000000-0000-0000-0000-000000000000'
+        if path == 'wrongschema': response['schemaVersion'] = 2
+        if path == 'wrongpack': result['provenance']['packID'] = 'other'
+        if path == 'wrongroute': result['provenance']['route'] = 'local'
+        if path == 'badcitation': result['summary'][0]['turns'] = [99]
+        if path == 'nocitation': result['summary'][0]['turns'] = []
+        if path == 'emptytext': result['summary'][0]['text'] = '   '
+        if path == 'multiline': result['summary'][0]['text'] = 'two\nlines'
+        if path == 'toomany': result['summary'] = result['summary'] * 257
+        if path == 'negative': result['timings']['inferenceMS'] = -1
+        if path == 'missingfield': del result['provenance']
+        payload = json.dumps(response).encode()
+        if path == 'truncated': payload = payload[:-1]
+        if path == 'oversized': payload = b' ' * (1048576 + 1)
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/plain' if path == 'wrongmime' else 'application/json')
+        self.send_header('Content-Length', str(len(payload)))
+        self.end_headers()
+        try:
+            self.wfile.write(payload)
         except (BrokenPipeError, ConnectionResetError):
             pass
 
