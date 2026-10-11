@@ -29,6 +29,24 @@ private final class Box<Value>: @unchecked Sendable {
     init(_ value: Value) { self.value = value }
 }
 
+/// What a worker runs for one request. It owns the loaded models: releasing the
+/// pipeline releases them. Tests substitute a double through the internal initializer.
+struct DiarizationPipeline: Sendable {
+    let process: @Sendable (DiarizationAudio, OfflineDiarizerConfig) async throws -> DiarizationResult
+
+    static func fluid(_ models: OfflineDiarizerModels) -> DiarizationPipeline {
+        let models = Box(models)
+        return DiarizationPipeline { audio, config in
+            let manager = OfflineDiarizerManager(config: config)
+            manager.initialize(models: models.value)
+            switch audio {
+            case .samples16kMono(let samples): return try await manager.process(audio: samples)
+            case .file(let url): return try await manager.process(url)
+            }
+        }
+    }
+}
+
 /// Local diarizer over FluidAudio's offline pipeline (pyannote community-1
 /// segmentation, WeSpeaker embeddings, VBx clustering on the Neural Engine).
 ///
@@ -36,6 +54,14 @@ private final class Box<Value>: @unchecked Sendable {
 /// recording. A request's deadline is enforced by this actor, not by the
 /// pipeline: a late worker's result is discarded, new requests are refused
 /// (`busy`) until it returns, and models stay alive until then.
+///
+/// Cancellation cannot interrupt a running pipeline. FluidAudio 0.15.5 runs
+/// segmentation and embedding in detached tasks that a caller's cancellation
+/// does not reach, and clustering has no cancellation point. A canceled, expired
+/// or closed request stops waiting at once; its worker is told to cancel, is
+/// skipped if it has not started the pipeline, and otherwise runs to completion
+/// with its output discarded. `closeAndWait()` returns once that worker has
+/// returned and the models are released.
 ///
 /// `open` turns on `ModelHub.offlineMode`, which is process-global in
 /// FluidAudio: after it every FluidAudio loader in the process refuses to
@@ -50,7 +76,7 @@ public actor FluidDiarizer: Diarizing {
     /// Model load and compile time, separate from any request.
     nonisolated public let preparationMS: Double
 
-    private var models: Box<OfflineDiarizerModels>?
+    private var pipeline: DiarizationPipeline?
     private struct Pending {
         let continuation: CheckedContinuation<SpeakerSegmentation, any Error>
         let timer: Task<Void, Never>
@@ -59,9 +85,9 @@ public actor FluidDiarizer: Diarizing {
     private var worker: Task<Void, Never>?
     private var closed = false
 
-    private init(pack: ValidatedDiarizerPack, config: FluidDiarizerConfig,
-                 models: OfflineDiarizerModels, preparationMS: Double) {
-        self.pack = pack; self.config = config; self.models = Box(models); self.preparationMS = preparationMS
+    init(pack: ValidatedDiarizerPack, config: FluidDiarizerConfig,
+         pipeline: DiarizationPipeline, preparationMS: Double) {
+        self.pack = pack; self.config = config; self.pipeline = pipeline; self.preparationMS = preparationMS
     }
 
     /// Revalidates the pack's file identity, forbids downloads for the process,
@@ -87,7 +113,7 @@ public actor FluidDiarizer: Diarizing {
             throw DiarizationError.unavailable("could not load diarizer models: \(error.localizedDescription)")
         }
         try Task.checkCancellation()
-        return FluidDiarizer(pack: pack, config: config, models: models,
+        return FluidDiarizer(pack: pack, config: config, pipeline: .fluid(models),
                              preparationMS: start.duration(to: .now).milliseconds)
     }
 
@@ -102,7 +128,7 @@ public actor FluidDiarizer: Diarizing {
         let entered = ContinuousClock.now
         try Task.checkCancellation()
         try request.validate()
-        guard !closed, let models else { throw DiarizationError.unavailable("diarizer is closed") }
+        guard !closed, let pipeline else { throw DiarizationError.unavailable("diarizer is closed") }
         guard worker == nil else { throw DiarizationError.busy }
         let deadline = entered.advanced(by: request.budget)
         var offline = OfflineDiarizerConfig.default
@@ -116,9 +142,6 @@ public actor FluidDiarizer: Diarizing {
                 offline.clustering.maxSpeakers = speakers.upperBound
             }
         }
-        let manager = OfflineDiarizerManager(config: offline)
-        manager.initialize(models: models.value)
-        let boxed = Box(manager)
         let result = try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<SpeakerSegmentation, any Error>) in
                 let timer = Task { [weak self] in
@@ -129,10 +152,10 @@ public actor FluidDiarizer: Diarizing {
                 worker = Task.detached { [self] in
                     let outcome: Result<DiarizationResult, any Error>
                     do {
-                        switch request.audio {
-                        case .samples16kMono(let samples): outcome = .success(try await boxed.value.process(audio: samples))
-                        case .file(let url): outcome = .success(try await boxed.value.process(url))
-                        }
+                        // The one cancellation point: a request abandoned before its
+                        // worker starts never enters the pipeline.
+                        try Task.checkCancellation()
+                        outcome = .success(try await pipeline.process(request.audio, offline))
                     } catch { outcome = .failure(error) }
                     await self.finished(outcome, request: request, entered: entered)
                 }
@@ -148,7 +171,7 @@ public actor FluidDiarizer: Diarizing {
                           request: DiarizationRequest, entered: ContinuousClock.Instant) {
         defer {
             worker = nil
-            if closed { models = nil }
+            if closed { pipeline = nil }
         }
         guard let pending else { return } // expired or canceled: late output is discarded
         self.pending = nil
@@ -209,7 +232,8 @@ public actor FluidDiarizer: Diarizing {
         guard let pending else { return }
         self.pending = nil
         pending.timer.cancel()
-        // The pipeline has no cancellation point; the worker runs to completion and is discarded.
+        // Skips a worker that has not entered the pipeline; a running one completes and is discarded.
+        worker?.cancel()
         pending.continuation.resume(throwing: cancelled ? CancellationError() : DiarizationError.timedOut)
     }
 
@@ -223,6 +247,23 @@ public actor FluidDiarizer: Diarizing {
             pending.timer.cancel()
             pending.continuation.resume(throwing: DiarizationError.unavailable("diarizer is closed"))
         }
-        if worker == nil { models = nil }
+        worker?.cancel()
+        if worker == nil { pipeline = nil }
+    }
+
+    /// True once the diarizer is closed, no worker is running and the models are released.
+    public var resourcesReleased: Bool { closed && worker == nil && pipeline == nil }
+
+    /// Closes, then waits until the running worker (if any) has returned and the
+    /// models are released, as `Cleaner.closeAndWait()` does. A pipeline already
+    /// running is not interrupted, so this can take as long as that request would
+    /// have. Cancelling the waiting task stops the wait and throws; it never
+    /// reopens admission, and the release still happens when the worker returns.
+    public func closeAndWait() async throws {
+        close()
+        while !resourcesReleased {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        try Task.checkCancellation()
     }
 }

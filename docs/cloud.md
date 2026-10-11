@@ -73,7 +73,7 @@ no retries, no redirects, no cookies or caches, a client-side monotonic deadline
 that starts before credential retrieval. There is no text to fall back to, so
 failures throw `DiarizationError` instead of returning a labeled result:
 `busy`, `timedOut`, `transport(detail)`, `invalidResponse(detail)`,
-`unavailable(detail)` after close, `noSpeech` when the server says so.
+`unavailable(detail)` after close, `noSpeech` when the server says so. `closeAndWait()` returns once the canceled worker has returned and the session is invalidated.
 
 ```swift
 import PomvoxCleanupCloud
