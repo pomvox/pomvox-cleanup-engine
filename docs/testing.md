@@ -21,7 +21,7 @@ xcodebuild -project Examples/iOSConsumer/iOSConsumer.xcodeproj -scheme iOSConsum
   -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath /tmp/pomvox-ios-consumer CODE_SIGNING_ALLOWED=NO build
 ```
 
-Tests that need a child process compile to nothing on iOS: the cloud suites (their loopback fixture is a Python process) and the diarizer's speech-synthesis fixture, which skips. Building the test bundles for iOS proves they compile, not that they pass there. Device behaviour is untested ([#30](https://github.com/pomvox/pomvox-cleanup-engine/issues/30)).
+CI runs these same commands in the `ios` job of `.github/workflows/ci.yml` on every pull request. Tests that need a child process compile to nothing on iOS: the cloud suites (their loopback fixture is a Python process) and the diarizer's speech-synthesis fixture, which skips. Building the test bundles for iOS proves they compile, not that they pass there. Device behaviour is untested ([#30](https://github.com/pomvox/pomvox-cleanup-engine/issues/30)).
 
 ```sh
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer

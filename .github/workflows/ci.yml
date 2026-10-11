@@ -55,3 +55,27 @@ jobs:
           xcodebuild -project Examples/Consumer/CleanupConsumer.xcodeproj
           -scheme Consumer -configuration Debug -derivedDataPath "$RUNNER_TEMP/consumer"
           -destination 'platform=macOS,arch=arm64' build-for-testing
+  ios:
+    name: iOS 17 build (packages and app consumer, no device)
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Cross-compile every package and its tests for arm64-apple-ios17.0
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          swift build --scratch-path "$RUNNER_TEMP/ios-root" --triple arm64-apple-ios17.0 --sdk "$SDK" --build-tests
+          swift build --package-path Runtime/MLX --scratch-path "$RUNNER_TEMP/ios-mlx" --triple arm64-apple-ios17.0 --sdk "$SDK" --build-tests
+          swift build --package-path Runtime/Diarization --scratch-path "$RUNNER_TEMP/ios-diar" --triple arm64-apple-ios17.0 --sdk "$SDK" --build-tests
+      - run: brew install xcodegen
+      - run: xcodegen generate --spec Examples/iOSConsumer/project.yml
+      - name: Build the iOS 17 app consumer without a deployment-target override
+        run: >-
+          xcodebuild -project Examples/iOSConsumer/iOSConsumer.xcodeproj
+          -scheme iOSConsumer -configuration Debug -sdk iphoneos
+          -destination 'generic/platform=iOS' -derivedDataPath "$RUNNER_TEMP/ios-consumer"
+          CODE_SIGNING_ALLOWED=NO build
