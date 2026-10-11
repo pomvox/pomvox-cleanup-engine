@@ -1,6 +1,6 @@
 # Pomvox Cleanup MLX
 
-Apple Silicon runtime for [Pomvox Cleanup Engine](https://github.com/pomvox/pomvox-cleanup-engine), version **@SDK_VERSION@**. This is a **beta developer SDK**, not a production-readiness certification. macOS 14+, Apple Silicon and full Xcode with Swift 6 are required.
+Apple Silicon runtime for [Pomvox Cleanup Engine](https://github.com/pomvox/pomvox-cleanup-engine), version **@SDK_VERSION@**. This is a **beta developer SDK**, not a production-readiness certification. macOS 14+, Apple Silicon and full Xcode with Swift 6 are required. iOS 17 is a declared build target only; on-device behaviour is not validated.
 
 ## Install
 

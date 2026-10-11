@@ -1,3 +1,5 @@
+// The loopback fixture is a Python child process; Foundation.Process is macOS-only.
+#if os(macOS)
 import XCTest
 @testable import PomvoxCleanupCloud
 
@@ -150,3 +152,4 @@ final class CloudNotesTests: XCTestCase, @unchecked Sendable {
         }
     }
 }
+#endif

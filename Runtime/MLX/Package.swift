@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "PomvoxCleanupMLX",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v14), .iOS(.v17)],
     products: [.library(name: "PomvoxCleanupMLX", targets: ["PomvoxCleanupMLX"])],
     dependencies: [
         .package(name: "PomvoxCleanup", path: "../.."),

@@ -6,6 +6,23 @@ Tests protect a concrete contract: preserve input bytes on fallback, never deliv
 
 Use macOS 14+ and full Xcode with Swift 6. The root package needs neither model assets nor third-party Swift dependencies. Python 3 runs the installer tests and loopback HTTP fixture.
 
+### iOS build check
+
+iOS 17 is a declared build target; nothing in this repository runs on a device. The check is that every package and an iOS app compile with no deployment-target override:
+
+```sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+swift build --scratch-path /tmp/pomvox-ios-root --triple arm64-apple-ios17.0 --sdk "$SDK" --build-tests
+swift build --package-path Runtime/MLX --scratch-path /tmp/pomvox-ios-mlx --triple arm64-apple-ios17.0 --sdk "$SDK" --build-tests
+swift build --package-path Runtime/Diarization --scratch-path /tmp/pomvox-ios-diar --triple arm64-apple-ios17.0 --sdk "$SDK" --build-tests
+xcodegen generate --spec Examples/iOSConsumer/project.yml
+xcodebuild -project Examples/iOSConsumer/iOSConsumer.xcodeproj -scheme iOSConsumer -configuration Debug \
+  -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath /tmp/pomvox-ios-consumer CODE_SIGNING_ALLOWED=NO build
+```
+
+Tests that need a child process compile to nothing on iOS: the cloud suites (their loopback fixture is a Python process) and the diarizer's speech-synthesis fixture, which skips. Building the test bundles for iOS proves they compile, not that they pass there. Device behaviour is untested ([#30](https://github.com/pomvox/pomvox-cleanup-engine/issues/30)).
+
 ```sh
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 python3 scripts/check.py --sanitizers --repeat 20

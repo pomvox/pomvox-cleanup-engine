@@ -32,12 +32,7 @@ enum SyntheticMeeting {
         let gap = [Float](repeating: 0, count: 16_000 * 8 / 10)
         for (index, line) in script.enumerated() {
             let file = directory.appendingPathComponent("utterance-\(index).wav")
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/say")
-            process.arguments = ["-v", line.voice, "-o", file.path, "--file-format=WAVE", "--data-format=LEI16@16000", line.text]
-            try process.run()
-            process.waitUntilExit()
-            guard process.terminationStatus == 0 else { throw XCTSkip("say(1) failed for voice \(line.voice)") }
+            try say(line.text, voice: line.voice, to: file)
             let spoken = try read16kMono(file)
             let start = Double(samples.count) / 16_000
             samples += spoken
@@ -45,6 +40,21 @@ enum SyntheticMeeting {
             samples += gap
         }
         return (samples, schedule)
+    }
+
+    /// Writes 16 kHz mono PCM16 speech with macOS `say(1)`. Other platforms skip:
+    /// they have no speech synthesizer command and cannot spawn processes.
+    static func say(_ text: String, voice: String, to file: URL) throws {
+        #if os(macOS)
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/say")
+        process.arguments = ["-v", voice, "-o", file.path, "--file-format=WAVE", "--data-format=LEI16@16000", text]
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { throw XCTSkip("say(1) failed for voice \(voice)") }
+        #else
+        throw XCTSkip("the synthetic fixture needs macOS say(1)")
+        #endif
     }
 
     static func read16kMono(_ url: URL) throws -> [Float] {

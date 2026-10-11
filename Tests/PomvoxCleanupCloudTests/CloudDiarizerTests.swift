@@ -1,3 +1,5 @@
+// The loopback fixture is a Python child process; Foundation.Process is macOS-only.
+#if os(macOS)
 import XCTest
 @testable import PomvoxCleanupCloud
 
@@ -179,3 +181,4 @@ final class CloudDiarizerTests: XCTestCase, @unchecked Sendable {
         XCTAssertEqual(rate, 16_000)
     }
 }
+#endif

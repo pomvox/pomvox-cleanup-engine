@@ -1,0 +1,42 @@
+# XcodeGen spec for the iOS packaging check: a minimal iPhone app with deployment
+# target iOS 17 that links every engine library an app would use. The deployment
+# target is set on the app target only; nothing overrides IPHONEOS_DEPLOYMENT_TARGET
+# for the project or the packages, so each package's own platform floor applies.
+#   xcodegen generate --spec Examples/iOSConsumer/project.yml
+#   xcodebuild -project Examples/iOSConsumer/iOSConsumer.xcodeproj -scheme iOSConsumer \
+#     -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' \
+#     -derivedDataPath /tmp/pomvox-ios-consumer CODE_SIGNING_ALLOWED=NO build
+# It builds; nothing here runs it on a device (#30).
+name: iOSConsumer
+packages:
+  PomvoxCleanupMLX:
+    path: ../../Runtime/MLX
+  PomvoxDiarizationFluid:
+    path: ../../Runtime/Diarization
+  PomvoxCleanup:
+    path: ../..
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CODE_SIGNING_ALLOWED: NO
+targets:
+  iOSConsumer:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - Sources/iOSConsumer
+    dependencies:
+      - package: PomvoxCleanupMLX
+      - package: PomvoxDiarizationFluid
+        product: PomvoxDiarizationFluid
+      - package: PomvoxCleanup
+        product: PomvoxCleanup
+      - package: PomvoxCleanup
+        product: PomvoxNotes
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.pomvox.cleanup.ios-consumer
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        TARGETED_DEVICE_FAMILY: "1"
