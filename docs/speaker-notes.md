@@ -193,6 +193,10 @@ Rules the runtime keeps:
 - **Labels are first-appearance order**, `S1` first, and segments are sorted.
   Degenerate (zero-length or invalid) pipeline segments are dropped with a
   warning naming the count.
+- **Three knobs, community-1 defaults.** `FluidDiarizerConfig` exposes
+  `computeUnits` (`.all`), `clusteringThreshold` (0.6) and `minSegmentSeconds`
+  (1.0); the request carries optional speaker bounds. Provenance settings record
+  the values used.
 
 Validated on macOS 15 (Apple M1, 16 GiB, Xcode 26.3). FluidAudio documents a
 Core ML BNNS crash on macOS 14 for this pipeline, fixed in macOS 15; the SDK's
@@ -235,6 +239,51 @@ Xcode 26.3, Debug build), recorded in
 One run, one machine, synthetic voices: a plumbing and lifecycle result, not a
 quality measurement on real meetings. That needs a consented corpus and is a
 stated gap.
+
+### What more voices showed
+
+`ScenarioTests` runs seven synthesized recordings through the real pipeline
+and records every outcome in
+[`docs/evidence/diarizer-scenarios-2026-10-11.json`](evidence/diarizer-scenarios-2026-10-11.json)
+(same machine and build as above; voices Samantha, Daniel, Karen, Moira and
+Rishi, all from one speech-synthesis engine). The test asserts only what the
+pipeline is expected to hold on such voices; the rest is reported, not hidden.
+
+| Scenario | Audio | Speakers found / voices | Confused | Missed | Request |
+| --- | --- | --- | --- | --- | --- |
+| two voices, 6 utterances | 36.7 s | 2 / 2 | 0 | 0.06 s | 872 ms |
+| two voices, 30 utterances | 183.7 s | 2 / 2 | 0 | 0.28 s | 2.58 s |
+| two voices with added noise | 73.5 s | 2 / 2 | 0 | 1.69 s | 1.31 s |
+| three voices (two female, one male) | 35.0 s | 2 / 3 | 0 | 0.10 s | 634 ms |
+| four voices (two female, two male), short interjections | 37.4 s | 2 / 4 | 0 | 1.00 s | 684 ms |
+| the same, `minSegmentSeconds: 0.5` | 37.4 s | 2 / 4 | 0 | 0.19 s | 653 ms |
+| the same, `speakers: 4...4` | 37.4 s | 2 / 4 | 0 | 0.19 s | 670 ms |
+
+Three findings a host should know:
+
+- **Two distinct voices are reliable** on this fixture family: one label per
+  voice, no confusion, over six minutes and with noise. An earlier manual run of
+  a 40-utterance, 347 s recording behaved the same (3.97 s request time).
+- **Same-gender voices from one synthesis engine merge into one label.** Threshold
+  sweeps from 0.5 to 0.8 did not separate them; 0.7 split the four-voice
+  recording into three with 3.25 s of confusion. Pinning the count to four
+  produced four labels with 3.3–4.1 s of confusion on a 12-utterance version
+  and was not honored at all on the 9-utterance version. Real voices differ
+  more than two presets of one TTS engine, so this is a fixture limitation as
+  much as a pipeline one; it is exactly what the consented-corpus gap is for.
+- **Speech shorter than the minimum segment gets no label.** The community-1
+  default is 1.0 s; a 0.8 s "Great news." vanished from the segmentation (it is
+  not lost: `Transcript.attribute` gives its words to the previous speaker).
+  `minSegmentSeconds: 0.5` labelled it, at no measurable cost on the long
+  recording.
+
+The defaults stay at the community-1 values the pack was validated with
+(threshold 0.6, minimum segment 1.0 s). Both are `FluidDiarizerConfig` knobs. A
+host that knows the attendee count passes `speakers:`; a host that cares about
+interjections lowers `minSegmentSeconds`. `computeUnits: .all` was fastest on
+the M1; `.cpuAndNeuralEngine` was 15 % slower on the long recording and
+`.cpuOnly` doubled the embedding stage. Overlapping speech is given to one
+speaker: a 1.5 s overlap counted as 1.5 s of confusion.
 
 ### Host stand-in example
 

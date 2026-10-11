@@ -77,7 +77,9 @@ Build outside the sandbox (SwiftPM resolves FluidAudio from its repository and
 cannot compile a manifest with the network denied); run the built bundle inside
 it, as for the MLX model tests. A green run proves the lifecycle (deadline,
 quarantine, close), the pack validator, and that two synthetic voices come back
-as two consistent speakers. It is not a quality measurement on real meetings;
+as two consistent speakers. `ScenarioTests` adds seven synthesized recordings
+(two to four voices, long, noisy, short interjections, configuration variants)
+and writes every outcome to the path in `POMVOX_DIARIZER_SCENARIO_EVIDENCE`. It is not a quality measurement on real meetings;
 that remains a gap in the release gates below. The 2026-10-11 run is recorded in
 `docs/evidence/diarizer-synthetic-2026-10-11.json`.
 

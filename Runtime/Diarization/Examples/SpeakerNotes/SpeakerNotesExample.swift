@@ -24,7 +24,11 @@ struct SpeakerNotesExample {
           --asr-models <dir>     Parakeet TDT v3 Core ML bundles already on disk
                                  (default: FluidAudio's cache for parakeet-tdt-0.6b-v3). Never downloads.
           --speakers N | MIN-MAX Expected speaker count or bounds.
+          --threshold 0.6        Clustering threshold (community-1 default 0.6; lower finds more speakers).
+          --min-segment 1.0      Shortest speech stretch that gets a speaker embedding, seconds.
+          --compute-units all|cpuAndNeuralEngine|cpuAndGPU|cpuOnly
           --names S1=Abhi,S2=Sam Display names per label.
+          --no-stt               Skip speech recognition; print the segmentation only.
           --segments-json        Also print the speaker segmentation as JSON on stderr.
         """)
         exit(2)
@@ -32,7 +36,8 @@ struct SpeakerNotesExample {
 
     static func run(_ arguments: [String]) async throws {
         var audio: URL?, packPath: String?, asrPath: String?, speakers: ClosedRange<Int>?
-        var names: [SpeakerLabel: String] = [:], dumpSegments = false
+        var names: [SpeakerLabel: String] = [:], dumpSegments = false, skipSTT = false
+        var config = FluidDiarizerConfig()
         var iterator = arguments.makeIterator()
         while let argument = iterator.next() {
             switch argument {
@@ -50,6 +55,21 @@ struct SpeakerNotesExample {
                     names[SpeakerLabel(sides[0])] = sides[1]
                 }
             case "--segments-json": dumpSegments = true
+            case "--no-stt": skipSTT = true
+            case "--threshold":
+                guard let value = iterator.next(), let threshold = Double(value) else { usage() }
+                config.clusteringThreshold = threshold
+            case "--min-segment":
+                guard let value = iterator.next(), let seconds = Double(value) else { usage() }
+                config.minSegmentSeconds = seconds
+            case "--compute-units":
+                switch iterator.next() {
+                case "all": config.computeUnits = .all
+                case "cpuAndNeuralEngine": config.computeUnits = .cpuAndNeuralEngine
+                case "cpuAndGPU": config.computeUnits = .cpuAndGPU
+                case "cpuOnly": config.computeUnits = .cpuOnly
+                default: usage()
+                }
             case "-h", "--help": usage()
             default:
                 guard audio == nil, !argument.hasPrefix("-") else { usage() }
@@ -62,7 +82,7 @@ struct SpeakerNotesExample {
 
         // 1. Verified diarizer pack, opened offline. From here on FluidAudio may not download.
         let pack = try DiarizerPackLoader.validate(directory: URL(fileURLWithPath: packPath))
-        let diarizer = try await FluidDiarizer.open(pack: pack)
+        let diarizer = try await FluidDiarizer.open(pack: pack, config: config)
         defer { Task { await diarizer.close() } }
         log("diarizer: \(pack.manifest.id) \(pack.manifest.version) ready in \(Int(diarizer.preparationMS)) ms")
 
@@ -78,6 +98,14 @@ struct SpeakerNotesExample {
         if dumpSegments {
             let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             log(String(decoding: try encoder.encode(segmentation), as: UTF8.self))
+        }
+
+        if skipSTT {
+            for segment in segmentation.segments {
+                print("\(segment.speaker.rawValue)\t\(String(format: "%.2f", segment.span.start))\t\(String(format: "%.2f", segment.span.end))")
+            }
+            await diarizer.close()
+            return
         }
 
         // 4. Host-side STT with word timings (Parakeet via FluidAudio, already on disk).

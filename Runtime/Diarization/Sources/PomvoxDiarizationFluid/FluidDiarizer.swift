@@ -11,9 +11,15 @@ public struct FluidDiarizerConfig: Sendable {
     public var computeUnits: MLComputeUnits
     /// Clustering threshold; the community-1 default is 0.6. Lower finds more speakers.
     public var clusteringThreshold: Double
+    /// Shortest stretch of speech that gets a speaker embedding, in seconds; the
+    /// community-1 default is 1.0. Shorter stretches get no segment, so a
+    /// sub-second interjection is attributed to a neighbour by the alignment
+    /// step. Lower it to label short interjections at the cost of noisier
+    /// embeddings.
+    public var minSegmentSeconds: Double
 
-    public init(computeUnits: MLComputeUnits = .all, clusteringThreshold: Double = 0.6) {
-        self.computeUnits = computeUnits; self.clusteringThreshold = clusteringThreshold
+    public init(computeUnits: MLComputeUnits = .all, clusteringThreshold: Double = 0.6, minSegmentSeconds: Double = 1.0) {
+        self.computeUnits = computeUnits; self.clusteringThreshold = clusteringThreshold; self.minSegmentSeconds = minSegmentSeconds
     }
 }
 
@@ -68,6 +74,9 @@ public actor FluidDiarizer: Diarizing {
         guard config.clusteringThreshold.isFinite, (0.0...1.0).contains(config.clusteringThreshold) else {
             throw DiarizationError.invalidRequest("clustering threshold must be within 0...1")
         }
+        guard config.minSegmentSeconds.isFinite, (0.1...10.0).contains(config.minSegmentSeconds) else {
+            throw DiarizationError.invalidRequest("minimum segment duration must be within 0.1...10 seconds")
+        }
         ModelHub.offlineMode = true
         let configuration = MLModelConfiguration()
         configuration.computeUnits = config.computeUnits
@@ -98,6 +107,7 @@ public actor FluidDiarizer: Diarizing {
         let deadline = entered.advanced(by: request.budget)
         var offline = OfflineDiarizerConfig.default
         offline.clustering.threshold = config.clusteringThreshold
+        offline.embedding.minSegmentDurationSeconds = config.minSegmentSeconds
         if let speakers = request.speakers {
             if speakers.lowerBound == speakers.upperBound {
                 offline.clustering.numSpeakers = speakers.lowerBound
@@ -183,6 +193,7 @@ public actor FluidDiarizer: Diarizing {
         timings.budgetMS = request.budget.milliseconds
         var settings = ["pipeline": DiarizerPackLoader.pipeline,
                         "clusteringThreshold": String(config.clusteringThreshold),
+                        "minSegmentSeconds": String(config.minSegmentSeconds),
                         "computeUnits": String(config.computeUnits.rawValue)]
         if let speakers = request.speakers { settings["speakers"] = "\(speakers.lowerBound)...\(speakers.upperBound)" }
         let provenance = Provenance(packID: pack.manifest.id, packVersion: pack.manifest.version,

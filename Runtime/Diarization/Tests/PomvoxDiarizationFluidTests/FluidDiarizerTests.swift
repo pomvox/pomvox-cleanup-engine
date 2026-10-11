@@ -25,7 +25,7 @@ enum SyntheticMeeting {
     ]
 
     /// Mono 16 kHz samples and the utterance schedule, with 0.8 s of silence between turns.
-    static func build(in directory: URL) throws -> (samples: [Float], schedule: [Utterance]) {
+    static func build(script: [(voice: String, text: String)] = script, in directory: URL) throws -> (samples: [Float], schedule: [Utterance]) {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         var samples: [Float] = []
         var schedule: [Utterance] = []
@@ -212,7 +212,7 @@ final class FluidDiarizerTests: XCTestCase {
     }
 }
 
-private func sysctlString(_ name: String) -> String {
+func sysctlString(_ name: String) -> String {
     var size = 0
     sysctlbyname(name, nil, &size, nil, 0)
     var buffer = [CChar](repeating: 0, count: max(1, size))
