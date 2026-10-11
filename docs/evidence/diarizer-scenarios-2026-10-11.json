@@ -1,0 +1,675 @@
+{
+  "buildMode" : "debug",
+  "date" : "2026-10-11T06:18:59Z",
+  "fixture" : "say(1) voices Samantha, Daniel, Karen, Moira, Rishi; 0.8 s gaps; synthetic speech from one TTS engine",
+  "fluidAudio" : "0.15.5",
+  "machine" : "Apple M1",
+  "memoryBytes" : 17179869184,
+  "model" : "MacBookPro17,1",
+  "os" : "Version 15.7.4 (Build 24G517)",
+  "pipeline" : "pyannote-community-1-offline",
+  "scenarios" : [
+    {
+      "audioSeconds" : 36.747687499999998,
+      "clusteringMS" : 2.8020143508911133,
+      "confusedSeconds" : 0,
+      "embeddingMS" : 835.24608612060547,
+      "missedSeconds" : 0.056651355743409404,
+      "oneLabelPerVoice" : true,
+      "perUtterance" : [
+        {
+          "coverage" : 0.99196987667113445,
+          "label" : "S1",
+          "seconds" : 4.7751875000000004,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.99826361245700168,
+          "label" : "S2",
+          "seconds" : 6.0764999999999993,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.188625,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 5.7501874999999991,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.99855233829914281,
+          "label" : "S1",
+          "seconds" : 5.3568125000000002,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 4.8003749999999989,
+          "voice" : "Daniel"
+        }
+      ],
+      "preparationMS" : 147.5675,
+      "requestTotalMS" : 872.43595800000003,
+      "scenario" : "two-voices",
+      "segmentationMS" : 375.38707256317139,
+      "segments" : 6,
+      "settings" : {
+        "clusteringThreshold" : "0.6",
+        "computeUnits" : "2",
+        "minSegmentSeconds" : "1.0",
+        "pipeline" : "pyannote-community-1-offline"
+      },
+      "speakersFound" : 2,
+      "speechSeconds" : 31.947687499999997,
+      "utterances" : 6,
+      "voices" : 2
+    },
+    {
+      "audioSeconds" : 183.7384375,
+      "clusteringMS" : 41.604995727539062,
+      "confusedSeconds" : 0,
+      "embeddingMS" : 2389.2539739608765,
+      "missedSeconds" : 0.28423463821409189,
+      "oneLabelPerVoice" : true,
+      "perUtterance" : [
+        {
+          "coverage" : 0.99196987667113445,
+          "label" : "S1",
+          "seconds" : 4.7751875000000004,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.99826361245700168,
+          "label" : "S2",
+          "seconds" : 6.0764999999999993,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.188625,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 5.7501874999999991,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.99855233829914281,
+          "label" : "S1",
+          "seconds" : 5.3568125000000002,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 4.8003749999999989,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.99041007265748748,
+          "label" : "S1",
+          "seconds" : 4.7751875000000013,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.99948945520621246,
+          "label" : "S2",
+          "seconds" : 6.0764999999999958,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.1886249999999947,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 5.7501874999999956,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.3568124999999966,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 4.8003750000000025,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.98884927007120205,
+          "label" : "S1",
+          "seconds" : 4.7751875000000013,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 6.07650000000001,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.1886250000000018,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 5.7501874999999956,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.99894074034305091,
+          "label" : "S1",
+          "seconds" : 5.3568125000000038,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 4.8003750000000025,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.99084498379481278,
+          "label" : "S1",
+          "seconds" : 4.7751875000000013,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.99914705465921583,
+          "label" : "S2",
+          "seconds" : 6.0764999999999958,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.1886250000000018,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.99959677775453082,
+          "label" : "S2",
+          "seconds" : 5.7501874999999814,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.9975508287854844,
+          "label" : "S1",
+          "seconds" : 5.3568124999999895,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 4.8003750000000025,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.99284069751842063,
+          "label" : "S1",
+          "seconds" : 4.7751875000000155,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.99709518258094709,
+          "label" : "S2",
+          "seconds" : 6.07650000000001,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.1886250000000018,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 5.7501875000000098,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.9993298545076934,
+          "label" : "S1",
+          "seconds" : 5.356812500000018,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 4.8003750000000025,
+          "voice" : "Daniel"
+        }
+      ],
+      "preparationMS" : 76.666041000000007,
+      "requestTotalMS" : 2576.2270829999998,
+      "scenario" : "two-voices-long",
+      "segmentationMS" : 1434.6050024032593,
+      "segments" : 30,
+      "settings" : {
+        "clusteringThreshold" : "0.6",
+        "computeUnits" : "2",
+        "minSegmentSeconds" : "1.0",
+        "pipeline" : "pyannote-community-1-offline"
+      },
+      "speakersFound" : 2,
+      "speechSeconds" : 159.73843750000003,
+      "utterances" : 30,
+      "voices" : 2
+    },
+    {
+      "audioSeconds" : 73.495374999999996,
+      "clusteringMS" : 7.4020624160766602,
+      "confusedSeconds" : 0,
+      "embeddingMS" : 1245.1410293579102,
+      "missedSeconds" : 1.6869902229309011,
+      "oneLabelPerVoice" : true,
+      "perUtterance" : [
+        {
+          "coverage" : 0.99196987667113445,
+          "label" : "S1",
+          "seconds" : 4.7751875000000004,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.84659135715368805,
+          "label" : "S2",
+          "seconds" : 6.0764999999999993,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.188625,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.99462481437425954,
+          "label" : "S2",
+          "seconds" : 5.7501874999999991,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.88426488733406783,
+          "label" : "S1",
+          "seconds" : 5.3568125000000002,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 4.8003749999999989,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.99752070870294707,
+          "label" : "S1",
+          "seconds" : 4.7751875000000013,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.99467454325031701,
+          "label" : "S2",
+          "seconds" : 6.0764999999999958,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.1886249999999947,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.99628213550101663,
+          "label" : "S2",
+          "seconds" : 5.7501874999999956,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.3568124999999966,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 4.8003750000000025,
+          "voice" : "Daniel"
+        }
+      ],
+      "preparationMS" : 57.380000000000003,
+      "requestTotalMS" : 1306.2134169999999,
+      "scenario" : "two-voices-noisy",
+      "segmentationMS" : 674.33798313140869,
+      "segments" : 12,
+      "settings" : {
+        "clusteringThreshold" : "0.6",
+        "computeUnits" : "2",
+        "minSegmentSeconds" : "1.0",
+        "pipeline" : "pyannote-community-1-offline"
+      },
+      "speakersFound" : 2,
+      "speechSeconds" : 63.895374999999987,
+      "utterances" : 12,
+      "voices" : 2
+    },
+    {
+      "audioSeconds" : 35.011937500000002,
+      "clusteringMS" : 1.9429922103881836,
+      "confusedSeconds" : 0,
+      "embeddingMS" : 607.71799087524414,
+      "missedSeconds" : 0.10270841979980005,
+      "oneLabelPerVoice" : false,
+      "perUtterance" : [
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 4.2884374999999997,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 5.0946875,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.99620414555325876,
+          "label" : "S1",
+          "seconds" : 5.2848124999999992,
+          "voice" : "Karen"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 4.6940625000000011,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 4.740124999999999,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0.98647290063787041,
+          "label" : "S1",
+          "seconds" : 6.1098124999999968,
+          "voice" : "Karen"
+        }
+      ],
+      "preparationMS" : 63.188333999999998,
+      "requestTotalMS" : 633.61695899999995,
+      "scenario" : "three-voices",
+      "segmentationMS" : 304.36801910400391,
+      "segments" : 6,
+      "settings" : {
+        "clusteringThreshold" : "0.6",
+        "computeUnits" : "2",
+        "minSegmentSeconds" : "1.0",
+        "pipeline" : "pyannote-community-1-offline"
+      },
+      "speakersFound" : 2,
+      "speechSeconds" : 30.211937499999998,
+      "utterances" : 6,
+      "voices" : 3
+    },
+    {
+      "audioSeconds" : 37.433187500000003,
+      "clusteringMS" : 3.47900390625,
+      "confusedSeconds" : 0,
+      "embeddingMS" : 653.86104583740234,
+      "missedSeconds" : 1.0022743339538582,
+      "oneLabelPerVoice" : false,
+      "perUtterance" : [
+        {
+          "coverage" : 0.96913758475961298,
+          "label" : "S1",
+          "seconds" : 4.2394999999999996,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.98632524267671084,
+          "label" : "S2",
+          "seconds" : 3.9399999999999995,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 4.6588750000000001,
+          "voice" : "Moira"
+        },
+        {
+          "coverage" : 0.99714705755047672,
+          "label" : "S2",
+          "seconds" : 2.7356250000000006,
+          "voice" : "Rishi"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.4731874999999981,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 1.8806875000000005,
+          "voice" : "Rishi"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 3.6254999999999988,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 0,
+          "label" : "S1",
+          "seconds" : 0.80975000000000108,
+          "voice" : "Moira"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 2.870062499999996,
+          "voice" : "Samantha"
+        }
+      ],
+      "preparationMS" : 56.349333000000001,
+      "requestTotalMS" : 683.73220800000001,
+      "scenario" : "four-voices",
+      "segmentationMS" : 314.51797485351562,
+      "segments" : 8,
+      "settings" : {
+        "clusteringThreshold" : "0.6",
+        "computeUnits" : "2",
+        "minSegmentSeconds" : "1.0",
+        "pipeline" : "pyannote-community-1-offline"
+      },
+      "speakersFound" : 2,
+      "speechSeconds" : 30.233187499999996,
+      "utterances" : 9,
+      "voices" : 4
+    },
+    {
+      "audioSeconds" : 37.433187500000003,
+      "clusteringMS" : 5.1939487457275391,
+      "confusedSeconds" : 0,
+      "embeddingMS" : 615.68105220794678,
+      "missedSeconds" : 0.19252433395385715,
+      "oneLabelPerVoice" : false,
+      "perUtterance" : [
+        {
+          "coverage" : 0.96913758475961298,
+          "label" : "S1",
+          "seconds" : 4.2394999999999996,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.98632524267671084,
+          "label" : "S2",
+          "seconds" : 3.9399999999999995,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 4.6588750000000001,
+          "voice" : "Moira"
+        },
+        {
+          "coverage" : 0.99714705755047672,
+          "label" : "S2",
+          "seconds" : 2.7356250000000006,
+          "voice" : "Rishi"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.4731874999999981,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 1.8806875000000005,
+          "voice" : "Rishi"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 3.6254999999999988,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 0.80975000000000108,
+          "voice" : "Moira"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 2.870062499999996,
+          "voice" : "Samantha"
+        }
+      ],
+      "preparationMS" : 60.532167000000001,
+      "requestTotalMS" : 652.76029200000005,
+      "scenario" : "four-voices-min-segment-0.5",
+      "segmentationMS" : 303.98392677307129,
+      "segments" : 9,
+      "settings" : {
+        "clusteringThreshold" : "0.6",
+        "computeUnits" : "2",
+        "minSegmentSeconds" : "0.5",
+        "pipeline" : "pyannote-community-1-offline"
+      },
+      "speakersFound" : 2,
+      "speechSeconds" : 30.233187499999996,
+      "utterances" : 9,
+      "voices" : 4
+    },
+    {
+      "audioSeconds" : 37.433187500000003,
+      "clusteringMS" : 3.4819841384887695,
+      "confusedSeconds" : 0,
+      "embeddingMS" : 641.05594158172607,
+      "missedSeconds" : 0.19252433395385715,
+      "oneLabelPerVoice" : false,
+      "perUtterance" : [
+        {
+          "coverage" : 0.96913758475961298,
+          "label" : "S1",
+          "seconds" : 4.2394999999999996,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 0.98632524267671084,
+          "label" : "S2",
+          "seconds" : 3.9399999999999995,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 4.6588750000000001,
+          "voice" : "Moira"
+        },
+        {
+          "coverage" : 0.99714705755047672,
+          "label" : "S2",
+          "seconds" : 2.7356250000000006,
+          "voice" : "Rishi"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 5.4731874999999981,
+          "voice" : "Samantha"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 1.8806875000000005,
+          "voice" : "Rishi"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S2",
+          "seconds" : 3.6254999999999988,
+          "voice" : "Daniel"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 0.80975000000000108,
+          "voice" : "Moira"
+        },
+        {
+          "coverage" : 1,
+          "label" : "S1",
+          "seconds" : 2.870062499999996,
+          "voice" : "Samantha"
+        }
+      ],
+      "preparationMS" : 57.644832999999998,
+      "requestTotalMS" : 669.90537500000005,
+      "scenario" : "four-voices-pinned-count",
+      "segmentationMS" : 284.85500812530518,
+      "segments" : 9,
+      "settings" : {
+        "clusteringThreshold" : "0.6",
+        "computeUnits" : "2",
+        "minSegmentSeconds" : "0.5",
+        "pipeline" : "pyannote-community-1-offline",
+        "speakers" : "4...4"
+      },
+      "speakersFound" : 2,
+      "speechSeconds" : 30.233187499999996,
+      "utterances" : 9,
+      "voices" : 4
+    }
+  ]
+}

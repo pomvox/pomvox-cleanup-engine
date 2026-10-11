@@ -193,7 +193,8 @@ public enum PackLoader {
 
     /// Inspect the opened descriptor, not a path that could change before opening.
     /// Nonblocking open prevents FIFOs from hanging preparation before fstat rejects them.
-    private static func readRegularFile(_ url: URL, limit: Int, expectedSize: Int? = nil,
+    /// Shared with the diarizer pack loader in this package.
+    package static func readRegularFile(_ url: URL, limit: Int, expectedSize: Int? = nil,
                                         consume: (Data) -> Void) throws {
         try Task.checkCancellation()
         guard url.isFileURL else { throw CleanupError.invalidPack("a local file is required") }
