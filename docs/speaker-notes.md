@@ -76,14 +76,23 @@ gets `deadline(for:base:)`; a turn the policy calls hopeless is skipped. An
 as `.fallback(.timedOut)` without inference. Per-turn deadlines are also
 clamped to what remains of the overall budget.
 
+After a turn times out, its worker can keep running until the model returns.
+The cleaner is quarantined meanwhile and falls back on anything sent to it at
+once. So before each turn (and each segment) the loop waits for a quarantined
+cleaner to recover, at most for that turn's own budget and within the overall
+deadline. It never starts a second worker. A turn whose wait runs out keeps its
+exact bytes with the warning `cleaner-quarantined`. `Cleaning.availability`
+(default `.ready`) is how the loop sees this.
+
 Turns the model never sees carry `Provenance.skipped` (route `skipped`) and one
 warning naming why:
 
 | Warning | Status | Cause |
 | --- | --- | --- |
 | `transcript-budget-exhausted` | `.fallback(.timedOut)` | the overall deadline was spent before this turn |
-| `turn-exceeds-admission-limit` | `.fallback(.unavailable)` | the turn's text is over `CleanupRequest.maxTextBytes` (16,384 bytes); it is not split or truncated |
+| `turn-exceeds-admission-limit` | `.fallback(.unavailable)` | the turn's text is over `CleanupRequest.maxTextBytes` (16,384 bytes); without opt-in segmentation it is not split or truncated |
 | `turn-budget-hopeless` | `.fallback(.timedOut)` | the budget policy's ceiling cannot fit the estimated work |
+| `cleaner-quarantined` | `.fallback(.unavailable)` | an earlier timed-out request was still running when this turn's wait ran out |
 
 Every such turn is its exact bytes with zero edits. Cancellation throws and
 delivers nothing, as for a single request. A transcript may have at most
@@ -96,6 +105,58 @@ when no dictation is waiting on the cleaner, or accept that dictations queue
 behind it (the queue holds two; the third is `busy`). Timing is proportional
 to the number and length of turns; a figure for a given transcript comes from
 `TranscriptResult.elapsedMS` and the per-turn timings, not from this document.
+
+### Long turns: opt-in segmentation
+
+A monologue can produce one turn longer than a request admits (16,384 bytes).
+A shorter turn can still be longer than the model can return: the MLX runtime
+caps output at `max(64, min(2 × input tokens, 1,024))` tokens, so a long turn
+that is admitted can run until the cap and then fall back (#13). Setting
+`TranscriptCleanOptions.segmentation` splits such turns into ordinary requests:
+
+```swift
+let options = TranscriptCleanOptions(turnBudget: .measuredM1, segmentation: TurnSegmentation())
+```
+
+- **Which turns.** Only a turn longer than `maxSegmentBytes` (default 1,000) is
+  split. Every other turn is one request, exactly as without the option. Nil,
+  the default, changes nothing.
+- **Why 1,000 bytes.** The runtime's tokenizer is byte-level, so a token covers
+  at least one byte. A segment of at most 1,000 bytes, cleaned to about its own
+  length, needs at most about 1,000 output tokens in any script, inside the
+  1,024-token cap. English needs far fewer. A host may set 64 to 16,384 bytes; a
+  larger segment is likelier to hit the cap. The limits themselves, the prompt
+  and the output cap are unchanged.
+- **Where it splits.** At sentence ends first (`.`, `!`, `?`, `…` and their
+  full-width forms, optionally followed by closing quotes, or a line break), then
+  at whitespace, then between grapheme clusters. It never splits inside a scalar
+  or a grapheme cluster. A turn carries no word timings, so pause boundaries are
+  not available here; a host that wants pause splits already gets them from
+  `Transcript.attribute`'s `splitGap`. A single grapheme cluster over the limit
+  stays whole.
+- **What is sent.** Each segment is trimmed. The whitespace between segments is
+  never sent and is copied back byte for byte. Each segment is one request with
+  the call's vocabulary, transforms and budget policy, clamped to what remains of
+  the overall deadline.
+- **What comes back.** Still one `TurnResult` per turn, with the same speaker
+  and span. Its `edits` are the segments' edits moved to their byte offsets in
+  the turn, so they stay ordered, non-overlapping and apply to the turn's input.
+  `segments` lists each segment's source range, output range, status and
+  warnings. A note quote's range in the cleaned text falls in one segment's
+  output range, which maps it to the source range it came from.
+- **Status.** The turn is `.cleaned` if any segment was cleaned. A segment that
+  fell back keeps its exact bytes in place, and a `segment-<i>-fallback:<reason>`
+  warning names it. If no segment was cleaned, the turn is the exact input with
+  no edits: `.fallback` with the first segment's reason, or `.unchanged`. The
+  first warning is `segmented:<count>`. Provenance is the pack's, with a
+  `segmentation` setting; timings are summed over the segments, and `totalMS` is
+  the turn's wall time.
+- **Limits.** `Transcript.maxTurns` (2,048) still counts input turns. A split
+  turn costs one request per segment, so a call can issue more requests than it
+  has turns; the overall deadline bounds the whole call, and segments after it
+  is spent keep their exact bytes (`transcript-budget-exhausted`). Cancellation
+  throws, and a split turn interrupted part way is never delivered or yielded.
+- **Checkpoints.** `segmentation` is part of a checkpoint's identity.
 
 ### Incremental cleaning and resuming
 

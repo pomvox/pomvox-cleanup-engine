@@ -10,7 +10,7 @@ public struct CleanedTurn: Codable, Equatable, Sendable {
 
 /// What a checkpoint is bound to. Equal identities mean the same turns (exact
 /// UTF-8, speakers, spans), the same output-affecting options (vocabulary,
-/// transforms, turn budget and base) and the same pack, so results are
+/// transforms, turn budget and base, segmentation) and the same pack, so results are
 /// interchangeable between runs. `overallDeadline` and `progress` are excluded:
 /// they are per call.
 public struct TranscriptCleanIdentity: Codable, Equatable, Sendable {
@@ -74,6 +74,8 @@ enum TranscriptDigest {
         }
         let base = options.turnBase.components
         writer.integer(UInt64(bitPattern: base.seconds)); writer.integer(UInt64(bitPattern: base.attoseconds))
+        writer.flag(options.segmentation != nil)
+        if let segmentation = options.segmentation { writer.integer(UInt64(segmentation.maxSegmentBytes)) }
         return writer.hex()
     }
 

@@ -17,13 +17,19 @@ public struct TranscriptCleanOptions: Sendable {
     public var overallDeadline: Duration?
     /// Called after each turn with (completed, total). Runs on the caller's task.
     public var progress: (@Sendable (Int, Int) -> Void)?
+    /// Opt-in: split a turn longer than `maxSegmentBytes` into several ordinary
+    /// requests and reassemble one `TurnResult`. Nil (the default): a turn is one
+    /// request, and a turn over the admission limit is skipped unchanged.
+    public var segmentation: TurnSegmentation?
 
     public init(vocabulary: [String] = [], transforms: CleanupTransforms = [],
                 turnBudget: CleanupBudgetPolicy? = nil, turnBase: Duration = .seconds(5),
-                overallDeadline: Duration? = nil, progress: (@Sendable (Int, Int) -> Void)? = nil) {
+                overallDeadline: Duration? = nil, progress: (@Sendable (Int, Int) -> Void)? = nil,
+                segmentation: TurnSegmentation? = nil) {
         self.vocabulary = vocabulary; self.transforms = transforms
         self.turnBudget = turnBudget; self.turnBase = turnBase
         self.overallDeadline = overallDeadline; self.progress = progress
+        self.segmentation = segmentation
     }
 }
 
@@ -139,43 +145,128 @@ extension Cleaning {
         if let overall = options.overallDeadline, overall <= .zero {
             throw CleanupError.invalidRequest("overall deadline must be greater than zero")
         }
+        try options.segmentation?.validate()
         let ceiling = options.overallDeadline.map { started.advanced(by: $0) }
         let total = transcript.turns.count
         for index in first..<total {
             try Task.checkCancellation()
             let turn = transcript.turns[index]
             let turnStart = ContinuousClock.now
-            func skipped(_ reason: FallbackReason, _ warning: String) -> TurnResult {
-                var timings = CleanupTimings()
-                timings.totalMS = turnStart.duration(to: .now).milliseconds
-                return TurnResult(turn: turn, result: CleanupResult(text: turn.text, edits: [],
-                    status: .fallback(reason), provenance: .skipped, timings: timings, warnings: [warning]))
-            }
-            let remaining = ceiling.map { ContinuousClock.now.duration(to: $0) }
             let result: TurnResult
-            if let remaining, remaining <= .zero {
-                result = skipped(.timedOut, "transcript-budget-exhausted")
-            } else if turn.text.utf8.count > CleanupRequest.maxTextBytes {
-                result = skipped(.unavailable, "turn-exceeds-admission-limit")
+            if let segmentation = options.segmentation, turn.text.utf8.count > segmentation.maxSegmentBytes {
+                result = try await cleanSegments(of: turn, maxBytes: segmentation.maxSegmentBytes,
+                                                 options: options, ceiling: ceiling, started: turnStart)
             } else {
-                var deadline: Duration?
-                if let policy = options.turnBudget {
-                    deadline = policy.deadline(for: turn.text, base: options.turnBase)
-                } else {
-                    deadline = CleanupRequest(turn.text).budget
-                }
-                if var deadline {
-                    if let remaining { deadline = min(deadline, remaining) }
-                    deadline = max(.milliseconds(1), min(deadline, .seconds(60)))
-                    let request = CleanupRequest(turn.text, vocabulary: options.vocabulary,
-                                                 deadline: deadline, transforms: options.transforms)
-                    result = TurnResult(turn: turn, result: try await clean(request))
-                } else {
-                    result = skipped(.timedOut, "turn-budget-hopeless")
-                }
+                result = TurnResult(turn: turn, result: try await cleanPiece(turn.text, options: options,
+                                                                            ceiling: ceiling, started: turnStart))
             }
             try await emit(index, result)
             options.progress?(index + 1, total)
         }
+    }
+
+    /// One request for `text` under the options' budget, clamped to the overall
+    /// ceiling; or, without inference, its exact bytes with `Provenance.skipped`
+    /// and a warning naming why.
+    func cleanPiece(_ text: String, options: TranscriptCleanOptions, ceiling: ContinuousClock.Instant?,
+                    started: ContinuousClock.Instant) async throws -> CleanupResult {
+        func skipped(_ reason: FallbackReason, _ warning: String) -> CleanupResult {
+            var timings = CleanupTimings()
+            timings.totalMS = started.duration(to: .now).milliseconds
+            return CleanupResult(text: text, edits: [], status: .fallback(reason), provenance: .skipped,
+                                 timings: timings, warnings: [warning])
+        }
+        let remaining = ceiling.map { ContinuousClock.now.duration(to: $0) }
+        if let remaining, remaining <= .zero { return skipped(.timedOut, "transcript-budget-exhausted") }
+        if text.utf8.count > CleanupRequest.maxTextBytes { return skipped(.unavailable, "turn-exceeds-admission-limit") }
+        var deadline: Duration
+        if let policy = options.turnBudget {
+            guard let sized = policy.deadline(for: text, base: options.turnBase) else {
+                return skipped(.timedOut, "turn-budget-hopeless")
+            }
+            deadline = sized
+        } else {
+            deadline = CleanupRequest(text).budget
+        }
+        // A timed-out request leaves the worker quarantined until it returns, and
+        // anything sent meanwhile falls back at once. Wait for it instead, within
+        // this piece's budget and the overall ceiling; never start a second worker.
+        if await availability == .quarantined {
+            let waitLimit = ContinuousClock.now.advanced(by: remaining.map { min(deadline, $0) } ?? deadline)
+            while await availability == .quarantined {
+                guard ContinuousClock.now < waitLimit else { return skipped(.unavailable, "cleaner-quarantined") }
+                try await Task.sleep(for: .milliseconds(20))
+            }
+            if let ceiling, ContinuousClock.now >= ceiling { return skipped(.timedOut, "transcript-budget-exhausted") }
+        }
+        if let ceiling { deadline = min(deadline, ContinuousClock.now.duration(to: ceiling)) }
+        deadline = max(.milliseconds(1), min(deadline, .seconds(60)))
+        return try await clean(CleanupRequest(text, vocabulary: options.vocabulary,
+                                              deadline: deadline, transforms: options.transforms))
+    }
+
+    /// Cleans a long turn as segments (`TurnSegmenter`) and reassembles one result:
+    /// separators are copied verbatim, each segment's text and edits are placed at
+    /// its byte offset, and the turn's status, provenance, timings and warnings
+    /// summarize the segments. If no segment was cleaned the result is the exact
+    /// input with no edits.
+    func cleanSegments(of turn: SpeakerTurn, maxBytes: Int, options: TranscriptCleanOptions,
+                       ceiling: ContinuousClock.Instant?, started: ContinuousClock.Instant) async throws -> TurnResult {
+        let input = Array(turn.text.utf8)
+        var output: [UInt8] = []
+        output.reserveCapacity(input.count)
+        var edits: [TextEdit] = []
+        var outcomes: [SegmentOutcome] = []
+        var results: [CleanupResult] = []
+        for piece in TurnSegmenter.split(turn.text, maxBytes: maxBytes) {
+            guard piece.isSegment else { output += input[piece.start..<piece.end]; continue }
+            try Task.checkCancellation()
+            let source = String(decoding: input[piece.start..<piece.end], as: UTF8.self)
+            let result = try await cleanPiece(source, options: options, ceiling: ceiling, started: ContinuousClock.now)
+            let outputStart = output.count
+            output += result.text.utf8
+            edits += result.edits.map { TextEdit(start: $0.start + piece.start, end: $0.end + piece.start, replacement: $0.replacement) }
+            outcomes.append(SegmentOutcome(sourceStart: piece.start, sourceEnd: piece.end, outputStart: outputStart,
+                                           outputEnd: output.count, status: result.status, warnings: result.warnings))
+            results.append(result)
+        }
+        let cleaned = results.contains { $0.status == .cleaned }
+        let fallback = results.lazy.compactMap { result -> FallbackReason? in
+            if case .fallback(let reason) = result.status { return reason } else { return nil }
+        }.first
+        let status: CleanupStatus = cleaned ? .cleaned : fallback.map { .fallback($0) } ?? .unchanged
+        var warnings = ["segmented:\(outcomes.count)"]
+        for (index, outcome) in outcomes.enumerated() {
+            if case .fallback(let reason) = outcome.status { warnings.append("segment-\(index)-fallback:\(reason)") }
+            warnings += outcome.warnings.map { "segment-\(index):\($0)" }
+        }
+        var provenance = Provenance.skipped
+        if let ran = results.first(where: { $0.provenance != .skipped })?.provenance {
+            provenance = Provenance(packID: ran.packID, packVersion: ran.packVersion, artifactDigest: ran.artifactDigest,
+                                    modelRevision: ran.modelRevision, runtime: ran.runtime, route: ran.route,
+                                    settings: ran.settings.merging(["segmentation": "maxSegmentBytes=\(maxBytes)"]) { $1 })
+        }
+        var timings = CleanupTimings()
+        for result in results {
+            let part = result.timings
+            timings.queueMS += part.queueMS; timings.validationMS += part.validationMS
+            timings.diffMS += part.diffMS; timings.budgetMS += part.budgetMS
+            timings.preparationMS = max(timings.preparationMS, part.preparationMS)
+            func add(_ total: inout Double?, _ value: Double?) { if let value { total = (total ?? 0) + value } }
+            add(&timings.tokenizationMS, part.tokenizationMS); add(&timings.prefillMS, part.prefillMS)
+            add(&timings.inferenceMS, part.inferenceMS); add(&timings.serverInferenceMS, part.serverInferenceMS)
+            func count(_ total: inout Int?, _ value: Int?) { if let value { total = (total ?? 0) + value } }
+            count(&timings.promptTokens, part.promptTokens); count(&timings.decodeTokens, part.decodeTokens)
+            count(&timings.speculativeRounds, part.speculativeRounds)
+            count(&timings.speculativeDrafted, part.speculativeDrafted)
+            count(&timings.speculativeAccepted, part.speculativeAccepted)
+            if let used = part.prefixCacheUsed { timings.prefixCacheUsed = (timings.prefixCacheUsed ?? true) && used }
+        }
+        timings.totalMS = started.duration(to: .now).milliseconds
+        // Without a cleaned segment every segment kept its exact bytes: the turn is its input, unedited.
+        let text = cleaned ? String(decoding: output, as: UTF8.self) : turn.text
+        return TurnResult(turn: turn, result: CleanupResult(text: text, edits: cleaned ? edits : [], status: status,
+                                                            provenance: provenance, timings: timings, warnings: warnings),
+                          segments: outcomes)
     }
 }

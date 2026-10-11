@@ -219,10 +219,14 @@ public protocol Cleaning: Sendable {
     /// The pack this cleaner runs, as its results' provenance names it. Nil when
     /// the cleaner cannot say; such a cleaner cannot resume a transcript checkpoint.
     var packIdentity: PackIdentity? { get async }
+    /// A snapshot, not a reservation. `.quarantined` means a timed-out request's
+    /// worker is still running and a new request would fall back at once.
+    var availability: CleanerAvailability { get async }
 }
 
 extension Cleaning {
     public var packIdentity: PackIdentity? { get async { nil } }
+    public var availability: CleanerAvailability { get async { .ready } }
 }
 
 /// Which pack produced a result: what a transcript checkpoint is bound to.

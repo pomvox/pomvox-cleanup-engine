@@ -1,0 +1,185 @@
+{
+  "memoryBytes" : 17179869184,
+  "os" : "Version 15.7.4 (Build 24G517)",
+  "pack" : "simplewords-v3 0.1.0-preview",
+  "runs" : [
+    {
+      "decodeTokens" : 1024,
+      "elapsedMS" : 22442.317666999999,
+      "inferenceMS" : 17263.005018234253,
+      "inputBytes" : 6064,
+      "name" : "admitted-6KB-single-request",
+      "outputBytes" : 6064,
+      "segments" : [
+
+      ],
+      "status" : "fallback(CleanupCore.FallbackReason.tokenLimit)",
+      "warnings" : [
+
+      ]
+    },
+    {
+      "decodeTokens" : 1160,
+      "elapsedMS" : 46778.516415999999,
+      "inferenceMS" : 40726.489067077637,
+      "inputBytes" : 6064,
+      "name" : "admitted-6KB-segmented",
+      "outputBytes" : 5082,
+      "segments" : [
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 955,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 240,
+          "sourceBytes" : 375,
+          "status" : "cleaned"
+        }
+      ],
+      "status" : "cleaned",
+      "warnings" : [
+        "segmented:7"
+      ]
+    },
+    {
+      "decodeTokens" : 3492,
+      "elapsedMS" : 150469.58412499999,
+      "inferenceMS" : 130846.94576263428,
+      "inputBytes" : 18046,
+      "name" : "oversize-18KB-segmented",
+      "outputBytes" : 15409,
+      "segments" : [
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 955,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 879,
+          "sourceBytes" : 970,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 733,
+          "sourceBytes" : 909,
+          "status" : "cleaned"
+        },
+        {
+          "outputBytes" : 149,
+          "sourceBytes" : 161,
+          "status" : "cleaned"
+        }
+      ],
+      "status" : "cleaned",
+      "warnings" : [
+        "segmented:20"
+      ]
+    }
+  ]
+}
