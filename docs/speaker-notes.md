@@ -12,6 +12,7 @@ dictation path. Nothing here runs unless a host calls it.
 | Notes | `CleanupNotes` (product `PomvoxNotes`) | `Notes.extract`, `NoteItem`, `Participant`, `NoteHeuristics`, `NotesRenderer.markdown` |
 | Diarization contract | `CleanupDiarization` (product `PomvoxDiarization`) | `Diarizing`, `DiarizationRequest`, `SpeakerSegmentation`, `DiarizerPackLoader` |
 | Local diarizer | `Runtime/Diarization` (product `PomvoxDiarizationFluid`, optional) | `FluidDiarizer` over FluidAudio 0.15.5's offline pyannote community-1 pipeline |
+| Cloud diarizer | `PomvoxCleanupCloud` | `CloudDiarizer`: explicit endpoint and credentials, wire protocol in `docs/cloud.md` |
 
 The SDK still owns no microphone, STT or UI. The host captures audio, runs its
 speech recognizer with word timings, and obtains speaker segments from a
@@ -297,8 +298,9 @@ package tests and the Xcode consumer.
 ## Limits and non-goals
 
 - Offline (whole recording) diarization only; no streaming speaker breaks.
-- No cloud diarizer in this change. When added it will be an explicit client
-  with an endpoint and credentials, like `CloudCleaner`.
+- The cloud diarizer (`CloudDiarizer` in `PomvoxCleanupCloud`) is an explicit
+  client with an endpoint and credentials, like `CloudCleaner`; see
+  [cloud](cloud.md#diarization-protocol-version-1). No provider is selected.
 - No speaker naming or enrollment. Labels are opaque; names are the host's.
 - No streaming. Turns are cleaned after the recording, not while it runs.
 - No summarization, no invented text, no reordering. Every byte of output is a

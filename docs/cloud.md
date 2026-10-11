@@ -62,3 +62,79 @@ Client-observed total replaces the server total, while server inference is expos
 The Python test fixture binds only to an ephemeral loopback port. Tests verify headers, explicit vocabulary/context/settings, response reconstruction, wrong-pack rejection, oversized responses, redirect refusal, timeouts and cancellation. It does not run a model or implement a premium service.
 
 A real service still needs tenant authentication/entitlements, scoped worker queues, quotas, deduplicated retry accounting, retention/deletion and no-training-by-default policies, region and reliability decisions, service-side response validation, cancellation and measured serving costs. No provider, production host, region, billing system or deployment has been selected.
+
+## Diarization — protocol version 1
+
+`CloudDiarizer` is the explicit cloud counterpart of the local diarizer runtime,
+with `CloudCleaner`'s rules: `connect` validates an HTTPS (or loopback HTTP)
+endpoint, a credential provider and a remote pack id/version without
+transmitting anything; `diarize` is the upload. One request in flight, no queue,
+no retries, no redirects, no cookies or caches, a client-side monotonic deadline
+that starts before credential retrieval. There is no text to fall back to, so
+failures throw `DiarizationError` instead of returning a labeled result:
+`busy`, `timedOut`, `transport(detail)`, `invalidResponse(detail)`,
+`unavailable(detail)` after close, `noSpeech` when the server says so.
+
+```swift
+import PomvoxCleanupCloud
+
+let remote = try CloudDiarizer.connect(endpoint: configuredEndpoint,
+    credentials: Tokens(fetch: acquireShortLivedToken),
+    pack: RemotePack(id: configuredDiarizerPack, version: configuredVersion))
+let who = try await remote.diarize(DiarizationRequest(samples: samples16k, speakers: 2...4, deadline: .seconds(120)))
+await remote.close()
+```
+
+### Request
+
+`POST` to the configured endpoint. The body is the audio as a 16 kHz mono
+16-bit PCM WAV (`Content-Type: audio/wav`), encoded by the client from the
+request's samples; `.file(URL)` audio is refused (`invalidRequest`), decoding
+files is the host's job. At most 60 minutes of audio per request (about 115 MB).
+
+Headers:
+
+| Header | Value |
+| --- | --- |
+| `Authorization` | `Bearer <provided credential>` |
+| `Content-Type` | `audio/wav` |
+| `Idempotency-Key` | the request UUID |
+| `X-Pomvox-Schema` | `1` |
+| `X-Pomvox-Pack` / `X-Pomvox-Pack-Version` | the configured remote pack |
+| `X-Pomvox-Audio-Seconds` | audio length, decimal seconds |
+| `X-Pomvox-Remaining-Milliseconds` | budget left after credential retrieval |
+| `X-Pomvox-Speakers` | `min-max`, only when the request bounds the count |
+
+### Response
+
+HTTP 200, `application/json`, at most 1 MiB:
+
+```json
+{"schemaVersion": 1, "requestID": "…", "result": {
+  "segments": [{"speaker": "A", "span": {"start": 0.0, "end": 4.2}, "confidence": 0.9}],
+  "speakerCount": 1,
+  "provenance": {"packID": "…", "packVersion": "…", "artifactDigest": "…", "modelRevision": "…",
+                 "runtime": "…", "route": "cloud", "settings": {}},
+  "timings": {"totalMS": 310, "budgetMS": 120000},
+  "warnings": []
+}}
+```
+
+The client requires matching schema, request id, pack id and version, route
+`cloud`, nonempty runtime, artifact digest and model revision, at most 4,096
+segments with finite, ordered, nonnegative spans that end within the audio
+length (0.5 s tolerance), a speaker count equal to the distinct labels, and
+finite nonnegative timings. Anything else is `invalidResponse`; the client
+never hands an unvalidated segmentation to the host. Speakers are then relabeled
+`S1`, `S2`, ... in order of first appearance, as the local runtime does, and
+`timings.totalMS` and `budgetMS` are replaced by client-observed values. HTTP or
+connectivity failures are `transport`; an elapsed deadline is `timedOut`
+whatever the server was doing.
+
+The Python fixture answers `audio/wav` posts with a two-speaker split of the
+reported duration and the same family of malformed variants as the text
+protocol. It does not run a model. Everything a real service still needs
+(tenancy, quotas, retention, consent, region, cancellation, cost) is listed
+above and unchanged; which provider sits behind the endpoint (pyannoteAI,
+Deepgram, AssemblyAI, a self-hosted pyannote, …) is the host's choice, outside
+this SDK.

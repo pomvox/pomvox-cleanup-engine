@@ -28,14 +28,6 @@ public struct CloudResponse: Codable, Sendable {
     public let result: CleanupResult
 }
 
-private final class NoRedirects: NSObject, URLSessionTaskDelegate, Sendable {
-    func urlSession(_ session: URLSession, task: URLSessionTask,
-                    willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
-                    completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
-        completionHandler(nil)
-    }
-}
-
 /// Explicit remote transport preview. One in-flight operation, no retries or route changes.
 public actor CloudCleaner: Cleaning {
     private struct Pending {
@@ -55,25 +47,13 @@ public actor CloudCleaner: Cleaning {
 
     private init(endpoint: URL, credentials: any CredentialProvider, pack: RemotePack) {
         self.endpoint = endpoint; self.credentials = credentials; self.pack = pack
-        let config = URLSessionConfiguration.ephemeral
-        config.httpCookieStorage = nil
-        config.urlCache = nil
-        config.urlCredentialStorage = nil
-        config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        session = URLSession(configuration: config, delegate: NoRedirects(), delegateQueue: nil)
+        session = CloudTransport.makeSession()
     }
 
     /// Validates configuration only; no request or credential retrieval until clean.
     public static func connect(endpoint: URL, credentials: any CredentialProvider,
                                pack: RemotePack) throws -> CloudCleaner {
-        let local = ["127.0.0.1", "localhost", "[::1]"].contains(endpoint.host ?? "")
-        guard endpoint.scheme == "https" || (endpoint.scheme == "http" && local),
-              endpoint.host != nil, endpoint.user == nil, endpoint.password == nil,
-              endpoint.query == nil, endpoint.fragment == nil,
-              !pack.id.isEmpty, pack.id.utf8.count <= 64,
-              !pack.version.isEmpty, pack.version.utf8.count <= 64 else {
-            throw CleanupError.invalidRequest("HTTPS endpoint (or loopback HTTP) and explicit pack version required")
-        }
+        try CloudTransport.validate(endpoint: endpoint, pack: pack)
         return CloudCleaner(endpoint: endpoint, credentials: credentials, pack: pack)
     }
 
@@ -129,8 +109,7 @@ public actor CloudCleaner: Cleaning {
                              pack: RemotePack) async throws -> CleanupResult {
         let token = try await credentials.bearerToken()
         try Task.checkCancellation()
-        guard !token.isEmpty, token.utf8.count <= 8_192,
-              !token.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else {
+        guard CloudTransport.isValidBearer(token) else {
             throw CleanupError.invalidRequest("invalid bearer credential")
         }
         let remaining = ContinuousClock.now.duration(to: deadline).milliseconds
@@ -172,7 +151,11 @@ public actor CloudCleaner: Cleaning {
     }
 
     private func completed(_ output: Result<CleanupResult, any Error>) {
-        defer { worker = nil }
+        defer {
+            worker = nil
+            // The session may be invalidated only after the worker that used it has returned.
+            if closed { session.invalidateAndCancel() }
+        }
         guard let pending else { return }
         self.pending = nil
         pending.timer.cancel()
@@ -219,7 +202,7 @@ public actor CloudCleaner: Cleaning {
     public func close() {
         closed = true
         if let pending { expire(id: pending.id, cancelled: true) }
-        session.invalidateAndCancel()
+        if worker == nil { session.invalidateAndCancel() }
     }
 
     deinit { session.invalidateAndCancel() }
