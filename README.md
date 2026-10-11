@@ -21,6 +21,7 @@ The engine is [MIT licensed](LICENSE). Baseline weights are separate artifacts w
 | --- | --- | --- |
 | Core, local facade, cloud client | macOS 14+, Swift 6 | Swift 6.2.4, macOS 15.7.4 |
 | MLX runtime | Apple Silicon, full Xcode, pinned installed model | Apple M1, 16 GiB, Xcode 26.3 |
+| Diarization runtime (optional) | Apple Silicon, macOS 15 recommended, pinned installed diarizer pack | Apple M1, 16 GiB, macOS 15, Xcode 26.3 |
 | Tests and asset preparation | Python 3; XcodeGen for the separate consumer | Debug/Release and sanitizer runs; see [evidence](docs/validation.md) |
 
 macOS 14 is the declared deployment minimum; it has not yet been exercised in the release validation matrix. Linux, Intel inference, C/Python/Node bindings and multiple resident local models are not supported in this milestone.
@@ -119,7 +120,7 @@ let cleaned = try await cleaner.clean(transcript, options: TranscriptCleanOption
 let markdown = NotesRenderer.markdown(Notes.extract(from: cleaned))
 ```
 
-A turn the model never sees keeps its exact bytes and says why in a warning. See [speaker transcripts and notes](docs/speaker-notes.md). Diarization itself needs audio and a model and is an optional runtime, not part of the root package.
+A turn the model never sees keeps its exact bytes and says why in a warning. Diarization itself needs audio and a model: the root package carries only the `PomvoxDiarization` contract and a verified diarizer pack format, and the optional `Runtime/Diarization` package (`PomvoxDiarizationFluid`) runs FluidAudio 0.15.5's offline pyannote community-1 pipeline on the Neural Engine from a pinned, hash-checked pack (`packs/pyannote-community1-coreml`), never downloading. See [speaker transcripts and notes](docs/speaker-notes.md).
 
 ## Explicit cloud client
 

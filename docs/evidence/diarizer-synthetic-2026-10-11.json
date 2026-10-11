@@ -1,0 +1,54 @@
+{
+  "audioSeconds" : 36.666375000000002,
+  "buildMode" : "debug (swift test)",
+  "callerWallMS" : 752.46908299999996,
+  "clusteringMS" : 5.6089162826538086,
+  "date" : "2026-10-11T05:20:47Z",
+  "embeddingMS" : 718.50407123565674,
+  "fixture" : "say(1) Samantha\/Daniel, 6 utterances, 0.8 s gaps, synthetic speech",
+  "fluidAudio" : "0.15.5",
+  "machine" : "Apple M1",
+  "memoryBytes" : 17179869184,
+  "model" : "MacBookPro17,1",
+  "os" : "Version 15.7.4 (Build 24G517)",
+  "outcome" : "passed",
+  "packDigest" : "0fbac1dad6ead5328f74825b5077b652ae1e14789f69f5475c948720d34116aa",
+  "perUtteranceCoverage" : [
+    {
+      "fraction" : 0.99196987667113445,
+      "label" : "S1",
+      "voice" : "Samantha"
+    },
+    {
+      "fraction" : 0.99826361245700168,
+      "label" : "S2",
+      "voice" : "Daniel"
+    },
+    {
+      "fraction" : 1,
+      "label" : "S1",
+      "voice" : "Samantha"
+    },
+    {
+      "fraction" : 0.99990656645525988,
+      "label" : "S2",
+      "voice" : "Daniel"
+    },
+    {
+      "fraction" : 1,
+      "label" : "S1",
+      "voice" : "Samantha"
+    },
+    {
+      "fraction" : 1,
+      "label" : "S2",
+      "voice" : "Daniel"
+    }
+  ],
+  "pipeline" : "pyannote-community-1-offline",
+  "preparationMS" : 53.880375000000001,
+  "requestTotalMS" : 752.28566699999999,
+  "segmentationMS" : 381.17802143096924,
+  "segmentCount" : 6,
+  "speakerCount" : 2
+}

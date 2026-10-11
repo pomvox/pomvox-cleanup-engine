@@ -10,7 +10,8 @@ dictation path. Nothing here runs unless a host calls it.
 | Transcript | `CleanupCore` (`PomvoxCleanup`) | `SpeakerLabel`, `TimeSpan`, `SpeakerSegment`, `TimedWord`, `SpeakerTurn`, `Transcript`, `Transcript.attribute`, `TranscriptResult` |
 | Transcript cleaning | `PomvoxCleanup` | `Cleaning.clean(_ transcript:options:)`, `TranscriptCleanOptions` |
 | Notes | `CleanupNotes` (product `PomvoxNotes`) | `Notes.extract`, `NoteItem`, `Participant`, `NoteHeuristics`, `NotesRenderer.markdown` |
-| Diarization | optional runtime, separate change | A `Diarizing` implementation produces `SpeakerSegment`s from host-captured audio |
+| Diarization contract | `CleanupDiarization` (product `PomvoxDiarization`) | `Diarizing`, `DiarizationRequest`, `SpeakerSegmentation`, `DiarizerPackLoader` |
+| Local diarizer | `Runtime/Diarization` (product `PomvoxDiarizationFluid`, optional) | `FluidDiarizer` over FluidAudio 0.15.5's offline pyannote community-1 pipeline |
 
 The SDK still owns no microphone, STT or UI. The host captures audio, runs its
 speech recognizer with word timings, and obtains speaker segments from a
@@ -130,10 +131,125 @@ A model-written summary is not part of this preview. When one is added it will
 be an explicit cloud client, like `CloudCleaner`, whose output must cite turn
 ranges that exist and which falls back to these deterministic notes otherwise.
 
+## Diarization
+
+Who spoke when is a separate aspect with its own contract and an optional
+runtime, because it needs audio and a model. The root package carries only
+the contract (`PomvoxDiarization`, no third-party dependencies):
+
+- `DiarizationRequest`: `.samples16kMono([Float])` or `.file(URL)`, optional
+  speaker bounds (`2...2` pins the count), optional deadline. At most two hours
+  of audio; the default budget is half the audio length, at least one minute,
+  ten minutes for a file of unknown length, never over an hour.
+- `SpeakerSegmentation`: segments sorted by start with opaque labels, speaker
+  count, `Provenance` (route `local` or `cloud`), timings and warnings.
+  `relabeled()` renames speakers `S1`, `S2`, ... in order of first appearance;
+  runtimes return that form.
+- `Diarizing`: `diarize(_:)` and `close()`. Errors are thrown
+  (`DiarizationError`): `busy`, `timedOut`, `noSpeech`, `unavailable`,
+  `failed`. There is no text to fall back to, so there is no fallback result.
+- `DiarizerPackLoader`: an installed diarizer pack is `pack.json` plus exactly
+  23 pinned files under `speaker-diarization/` (four compiled Core ML
+  bundles, the PLDA parameters, the upstream `LICENSE` and `NOTICE.md`), each
+  checked by size and SHA-256; extra files, symlinks and a changed byte are
+  refused. `scripts/prepare-diarizer-pack.py` installs one from an already
+  obtained snapshot; it never downloads.
+
+### The local runtime
+
+`Runtime/Diarization` is a separate Swift package, like `Runtime/MLX`, so
+contract users do not acquire Core ML model dependencies. It depends on
+FluidAudio at exactly `0.15.5` (inside the range the Pomvox app allows) and
+runs that release's **offline** pipeline: pyannote community-1 segmentation,
+WeSpeaker embeddings, VBx clustering, on the Neural Engine. The artifacts are
+Fluid Inference's Core ML conversions, CC-BY-4.0; see `THIRD_PARTY_NOTICES.md`
+for the attribution that travels with a distribution. The repository's older
+online pipeline and its bundles are not used: their license statement excludes
+them.
+
+```swift
+import PomvoxDiarizationFluid // re-exports PomvoxDiarization and the transcript types
+
+let pack = try DiarizerPackLoader.validate(directory: installedDiarizerPack)
+let diarizer = try await FluidDiarizer.open(pack: pack)      // never downloads
+let who = try await diarizer.diarize(DiarizationRequest(samples: samples16k, speakers: 2...4))
+let transcript = Transcript.attribute(words: words, segments: who.segments)
+await diarizer.close()
+```
+
+Rules the runtime keeps:
+
+- **Local-first.** `open` revalidates the pack's file identity, then sets
+  FluidAudio's `ModelHub.offlineMode` to `true`. That switch is process-global:
+  from then on every FluidAudio loader in the process throws instead of
+  downloading. A host that also runs Parakeet through FluidAudio must have those
+  models on disk already (the Pomvox app does).
+- **One request, no queue.** A second `diarize` while one runs throws `busy`.
+- **Deadlines are the caller's.** The pipeline has no cancellation point, so the
+  actor enforces the budget: a late result is discarded, the waiter gets
+  `timedOut` (or `CancellationError`), and admission stays refused
+  (`availability == .quarantined`) until the worker returns. Models stay alive
+  until then; `close()` releases them when the worker is done.
+- **Labels are first-appearance order**, `S1` first, and segments are sorted.
+  Degenerate (zero-length or invalid) pipeline segments are dropped with a
+  warning naming the count.
+
+Validated on macOS 15 (Apple M1, 16 GiB, Xcode 26.3). FluidAudio documents a
+Core ML BNNS crash on macOS 14 for this pipeline, fixed in macOS 15; the SDK's
+deployment floor is unchanged, but the diarizer is not validated below macOS 15.
+
+### Testing it
+
+The runtime's tests skip unless `POMVOX_TEST_DIARIZER_PACK` names an installed
+pack. The fixture is built at test time from macOS speech synthesis: two voices
+(`Samantha`, `Daniel`) alternate six utterances with 0.8 s gaps. The test asserts
+two speakers, one consistent label per voice, at least 60 % of each utterance
+covered by its voice's label, and that `Transcript.attribute` recovers the six
+scripted turns from the segments. Set `POMVOX_DIARIZER_EVIDENCE` to a path to
+record timings and coverage as JSON.
+
+```sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+python3 scripts/prepare-diarizer-pack.py /path/to/speaker-diarization-coreml-snapshot .local/pyannote-community1-coreml
+swift build --package-path Runtime/Diarization --scratch-path /tmp/pomvox-diarizer --build-tests
+POMVOX_TEST_DIARIZER_PACK=$PWD/.local/pyannote-community1-coreml \
+POMVOX_DIARIZER_EVIDENCE=/tmp/diarizer-evidence.json \
+  sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+  xcrun xctest /tmp/pomvox-diarizer/debug/PomvoxDiarizationFluidPackageTests.xctest
+```
+
+The build runs outside the sandbox (SwiftPM needs the network to resolve and
+cannot compile a manifest under `deny network*`); the test bundle runs inside it.
+
+Measured on 2026-10-11 on an Apple M1 (MacBookPro17,1, 16 GiB, macOS 15.7.4,
+Xcode 26.3, Debug build), recorded in
+[`docs/evidence/diarizer-synthetic-2026-10-11.json`](evidence/diarizer-synthetic-2026-10-11.json):
+
+| Measure | Value |
+| --- | --- |
+| Fixture | 36.7 s of synthetic speech, 6 utterances, 2 voices |
+| Model load (`preparationMS`) | 54 ms (bundles already compiled by Core ML on an earlier run) |
+| Request total | 752 ms, of which segmentation 381 ms, embedding 719 ms (overlapping stages), clustering 6 ms |
+| Outcome | 2 speakers, 6 segments; every utterance ≥ 99 % covered by its voice's label |
+
+One run, one machine, synthetic voices: a plumbing and lifecycle result, not a
+quality measurement on real meetings. That needs a consented corpus and is a
+stated gap.
+
+### Host stand-in example
+
+`swift run --package-path Runtime/Diarization speaker-notes-example meeting.wav --diarizer-pack .local/pyannote-community1-coreml`
+diarizes a file, runs Parakeet through FluidAudio **in the example only** to get
+word timings, aligns, and prints deterministic notes over the recognized (not
+cleaned) transcript. The cleanup step is left out because the MLX runtime needs
+an Xcode build to package Metal shaders; the cleaned path is covered by the root
+package tests and the Xcode consumer.
+
 ## Limits and non-goals
 
-- No diarization in the root package: it needs audio and a model, and lives in
-  an optional runtime with its own verified pack, as MLX inference does.
+- Offline (whole recording) diarization only; no streaming speaker breaks.
+- No cloud diarizer in this change. When added it will be an explicit client
+  with an endpoint and credentials, like `CloudCleaner`.
 - No speaker naming or enrollment. Labels are opaque; names are the host's.
 - No streaming. Turns are cleaned after the recording, not while it runs.
 - No summarization, no invented text, no reordering. Every byte of output is a

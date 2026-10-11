@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Add speaker-attributed transcripts: `Transcript`, `SpeakerTurn`, `SpeakerSegment`, `TimedWord` and the pure `Transcript.attribute(words:segments:)` alignment, plus `clean(_ transcript:options:)` on every `Cleaning` value, which cleans one turn per ordinary request and preserves speakers, spans and order. Turns the model never sees (overall deadline spent, over the admission limit, hopeless budget) keep their exact bytes with `Provenance.skipped` and a named warning. The dictation path is unchanged.
+- Add `PomvoxDiarization` (dependency-free): the `Diarizing` protocol, `DiarizationRequest`, `SpeakerSegmentation`, and a verified diarizer pack format (`DiarizerPackLoader`, 23 pinned files, nested Core ML bundles) with `scripts/prepare-diarizer-pack.py`.
+- Add the optional `Runtime/Diarization` package (`PomvoxDiarizationFluid`): `FluidDiarizer` runs FluidAudio 0.15.5's offline pyannote community-1 pipeline (CC-BY-4.0 artifacts pinned in `packs/pyannote-community1-coreml/pack.json`) on host-supplied audio, loads only from a validated pack, forbids downloads for the process, enforces deadlines caller-side with quarantine, and returns first-appearance `S1…` labels. Includes a host stand-in example (`speaker-notes-example`) and tests on a synthetic two-voice fixture generated with macOS speech synthesis.
 - Add `PomvoxNotes`, deterministic notes over a cleaned transcript: participants, and action-item, decision, question and list-item candidates quoted verbatim with turn index and UTF-8 range, rendered to Markdown by `NotesRenderer`. No model writes the notes; the cue set is versioned as `pomvox-notes-v0.1`.
 
 ## 0.1.0-beta.3 — 2026-10-05
