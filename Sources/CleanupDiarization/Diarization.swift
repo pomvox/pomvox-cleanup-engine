@@ -19,6 +19,10 @@ public enum DiarizationError: Error, Equatable, Sendable, LocalizedError {
     case timedOut
     case noSpeech
     case failed(String)
+    /// A cloud client could not reach or complete the exchange with its endpoint.
+    case transport(String)
+    /// A cloud endpoint answered with something the client refused to hand on.
+    case invalidResponse(String)
 
     public var errorDescription: String? {
         switch self {
@@ -28,6 +32,8 @@ public enum DiarizationError: Error, Equatable, Sendable, LocalizedError {
         case .timedOut: "Diarization did not finish before its deadline."
         case .noSpeech: "No speech was detected in the audio."
         case .failed(let detail): "Diarization failed: \(detail)"
+        case .transport(let detail): "Diarization transport failed: \(detail)"
+        case .invalidResponse(let detail): "Diarization endpoint returned an invalid response: \(detail)"
         }
     }
 }

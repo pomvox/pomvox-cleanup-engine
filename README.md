@@ -126,7 +126,7 @@ A turn the model never sees keeps its exact bytes and says why in a warning. Dia
 
 Import `PomvoxCleanupCloud` from the root package. Connect it only after the host has deliberately chosen remote processing and supplied an endpoint, pack/version and `CredentialProvider`. Calling `clean` transmits the request to that endpoint.
 
-See [cloud configuration and protocol](docs/cloud.md) for a complete example, payloads, validation rules and failure semantics. HTTPS is required except for loopback development. The included Python server is a contract test fixture, not a deployable service.
+See [cloud configuration and protocol](docs/cloud.md) for a complete example, payloads, validation rules and failure semantics. The same module offers `CloudDiarizer`, an explicit cloud diarizer with the same rules that uploads host-captured audio only when called. HTTPS is required except for loopback development. The included Python server is a contract test fixture, not a deployable service.
 
 ## Build the separate consumer
 

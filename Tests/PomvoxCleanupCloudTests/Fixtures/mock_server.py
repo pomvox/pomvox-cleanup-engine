@@ -1,12 +1,16 @@
 """Loopback-only contract fixture. No premium inference or content logging."""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import io
 import json
 import time
+import wave
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
     def do_POST(self):
+        if self.headers.get('Content-Type') == 'audio/wav':
+            return self.diarize()
         body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         if (self.headers.get('Authorization') != 'Bearer test-only-token'
                 or self.headers.get('Idempotency-Key') != body['requestID']
@@ -82,6 +86,77 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(payload[1:])
             else:
                 self.wfile.write(payload)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def diarize(self):
+        """Diarization protocol v1 fixture: a two-speaker split of the uploaded WAV's duration."""
+        raw = self.rfile.read(int(self.headers['Content-Length']))
+        try:
+            with wave.open(io.BytesIO(raw)) as audio:
+                params = audio.getparams()
+                seconds = params.nframes / 16000
+            shape_ok = (params.nchannels, params.sampwidth, params.framerate) == (1, 2, 16000)
+        except (wave.Error, EOFError):
+            shape_ok = False
+            seconds = 0
+        remaining = int(self.headers.get('X-Pomvox-Remaining-Milliseconds', '0'))
+        if (not shape_ok or self.headers.get('Authorization') != 'Bearer test-only-token'
+                or len(self.headers.get('Idempotency-Key', '')) != 36
+                or self.headers.get('X-Pomvox-Schema') != '1'
+                or self.headers.get('X-Pomvox-Pack') != 'diar-test'
+                or self.headers.get('X-Pomvox-Pack-Version') != '1.0.0'
+                or abs(float(self.headers.get('X-Pomvox-Audio-Seconds', '-1')) - seconds) > 0.01
+                or not 0 < remaining <= 3600000
+                or (self.headers.get('X-Pomvox-Speakers') not in (None, '2-2', '1-4'))):
+            self.send_error(400)
+            return
+        path = self.path.removeprefix('/d/')
+        if path == 'http500':
+            self.send_error(500)
+            return
+        if path == 'redirect':
+            self.send_response(302)
+            self.send_header('Location', 'https://example.org/never-follow')
+            self.end_headers()
+            return
+        if path == 'slow':
+            time.sleep(0.4)
+        half = round(seconds / 2, 3)
+        segments = [{'speaker': 'B', 'span': {'start': 0.0, 'end': half}, 'confidence': 0.9},
+                    {'speaker': 'A', 'span': {'start': half, 'end': round(seconds, 3)}}]
+        provenance = {'packID': 'diar-test', 'packVersion': '1.0.0', 'artifactDigest': 'mock-digest',
+                      'modelRevision': 'mock-revision', 'runtime': 'loopback-mock', 'route': 'cloud', 'settings': {}}
+        timings = {'audioSeconds': seconds, 'totalMS': 7, 'budgetMS': remaining}
+        result = {'segments': segments, 'speakerCount': 2, 'provenance': provenance, 'timings': timings, 'warnings': ['mock-only']}
+        response = {'schemaVersion': 1, 'requestID': self.headers['Idempotency-Key'], 'result': result}
+        if path == 'unsorted': result['segments'] = segments[::-1]
+        if path == 'wrongid': response['requestID'] = '00000000-0000-0000-0000-000000000000'
+        if path == 'wrongschema': response['schemaVersion'] = 2
+        if path == 'wrongpack': provenance['packID'] = 'other'
+        if path == 'wrongversion': provenance['packVersion'] = '2.0.0'
+        if path == 'wrongroute': provenance['route'] = 'local'
+        if path == 'emptyruntime': provenance['runtime'] = ''
+        if path == 'overrun': segments[1]['span']['end'] = seconds + 5
+        if path == 'reversed': segments[0]['span'] = {'start': half, 'end': 0.0}
+        if path == 'negativestart': segments[0]['span']['start'] = -1
+        if path == 'badconfidence': segments[0]['confidence'] = 1.5
+        if path == 'miscount': result['speakerCount'] = 3
+        if path == 'toomany': result['segments'] = [segments[0]] * 4097
+        if path == 'negative': timings['totalMS'] = -1
+        if path == 'nospeech':
+            result['segments'] = []
+            result['speakerCount'] = 0
+        if path == 'missingfield': del result['provenance']
+        payload = json.dumps(response).encode()
+        if path == 'truncated': payload = payload[:-1]
+        if path == 'oversized': payload = b' ' * (1048576 + 1)
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/plain' if path == 'wrongmime' else 'application/json')
+        self.send_header('Content-Length', str(len(payload)))
+        self.end_headers()
+        try:
+            self.wfile.write(payload)
         except (BrokenPipeError, ConnectionResetError):
             pass
 
