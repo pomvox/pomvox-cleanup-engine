@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pomvox Cleanup Engine — local demo</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1>Pomvox Cleanup Engine <span class="tag">local demo</span></h1>
+  <p id="status" class="muted">Connecting to the local server…</p>
+</header>
+
+<main>
+  <section>
+    <h2>1. Dictation cleanup</h2>
+    <p class="muted">Sends <code>POST /v1/clean</code>, the engine's cleanup wire protocol, to the local server. The reply is the SDK's own <code>CleanupResult</code>: text, edits, outcome, provenance, timings.</p>
+    <textarea id="raw" rows="3">um so i think we should uh probably ship it tomorrow wait no on friday</textarea>
+    <div class="row">
+      <button id="clean">Clean</button>
+      <span id="clean-meta" class="muted"></span>
+    </div>
+    <pre id="cleaned" class="out" hidden></pre>
+  </section>
+
+  <section>
+    <h2>2. Speaker notes</h2>
+    <p class="muted">Record in the browser, or upload a WAV. The page encodes 16 kHz mono PCM and sends it to <code>POST /v1/speaker-notes</code>, where the server runs speech recognition (Parakeet, host side), the on-device diarizer, per-turn cleanup and deterministic notes. Audio goes to <code>127.0.0.1</code> only.</p>
+    <div class="row">
+      <button id="record">Record</button>
+      <button id="stop" disabled>Stop &amp; process</button>
+      <label class="file">Upload WAV <input id="file" type="file" accept=".wav,audio/wav"></label>
+      <label>Speakers <input id="speakers" type="text" size="6" placeholder="auto"></label>
+      <span id="rec-meta" class="muted"></span>
+    </div>
+    <div id="timeline" class="timeline" hidden></div>
+    <article id="notes" class="out" hidden></article>
+    <details id="raw-json" hidden><summary>Raw reply (segmentation, transcript result, notes)</summary><pre id="json"></pre></details>
+  </section>
+
+  <section class="muted small">
+    <p>What this page is: a client of a local companion process. The browser cannot run the SDK (Swift, Metal, Core ML); the server does, and speaks the same protocols a hosted service would. The bearer token is generated per server start and embedded in this page. Nothing here is a product.</p>
+  </section>
+</main>
+<script>window.POMVOX_TOKEN = "__TOKEN__";</script>
+<script src="/app.js"></script>
+</body>
+</html>
