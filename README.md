@@ -10,6 +10,7 @@ A local-first Swift SDK for turning dictated text into cleaned text, with explic
 - **Predictable failures:** exact-input fallback, bounded admission and deadlines. Cancellation throws and suppresses late delivery.
 - **Inspectable results:** final text, UTF-8 edits, outcome, artifact/runtime identity and stage timings.
 - **Explicit cloud access:** a separate transport client requiring an endpoint and credentials. No automatic uploads, downloads, route changes or retries.
+- **Speaker transcripts and notes:** optional per-turn cleaning of a speaker-attributed transcript, and deterministic notes that quote it verbatim.
 - **A small host seam:** the SDK owns no microphone, STT, clipboard, paste, UI, history or telemetry.
 
 The engine is [MIT licensed](LICENSE). Baseline weights are separate artifacts with their own license; see [pack licensing and availability](docs/packs.md#baseline). Premium cloud packs keep proprietary weights server-side. Licensed private enterprise deployment is a separate product direction. This repository does not contain a premium service, billing or a marketplace.
@@ -20,6 +21,7 @@ The engine is [MIT licensed](LICENSE). Baseline weights are separate artifacts w
 | --- | --- | --- |
 | Core, local facade, cloud client | macOS 14+, Swift 6 | Swift 6.2.4, macOS 15.7.4 |
 | MLX runtime | Apple Silicon, full Xcode, pinned installed model | Apple M1, 16 GiB, Xcode 26.3 |
+| Diarization runtime (optional) | Apple Silicon, macOS 15 recommended, pinned installed diarizer pack | Apple M1, 16 GiB, macOS 15, Xcode 26.3 |
 | Tests and asset preparation | Python 3; XcodeGen for the separate consumer | Debug/Release and sanitizer runs; see [evidence](docs/validation.md) |
 
 macOS 14 is the declared deployment minimum; it has not yet been exercised in the release validation matrix. Linux, Intel inference, C/Python/Node bindings and multiple resident local models are not supported in this milestone.
@@ -106,6 +108,20 @@ for edit in result.edits {
 
 Edits use half-open **UTF-8 byte offsets**, not character offsets. Invalid or overlapping ranges throw. The local engine emits one minimal contiguous replacement; it may include an unchanged interior span and does not describe editorial intent. Keep the original transcript for mapping these ranges.
 
+## Speaker transcripts and notes
+
+For recordings with more than one voice, the engine cleans a speaker-attributed transcript one turn per ordinary request and keeps the structure intact. The host supplies recognized words with timings and who-spoke-when segments; `Transcript.attribute` aligns them, `cleaner.clean(transcript)` cleans each turn through the same admission, guards and fallback, and `PomvoxNotes` extracts deterministic notes (action items, decisions, questions, list items, participants) as verbatim quotes with provenance, rendered to Markdown. No model writes the notes.
+
+```swift
+import PomvoxNotes // re-exports the transcript types
+
+let transcript = Transcript.attribute(words: timedWords, segments: speakerSegments)
+let cleaned = try await cleaner.clean(transcript, options: TranscriptCleanOptions(overallDeadline: .seconds(120)))
+let markdown = NotesRenderer.markdown(Notes.extract(from: cleaned))
+```
+
+A turn the model never sees keeps its exact bytes and says why in a warning. Diarization itself needs audio and a model: the root package carries only the `PomvoxDiarization` contract and a verified diarizer pack format, and the optional `Runtime/Diarization` package (`PomvoxDiarizationFluid`) runs FluidAudio 0.15.5's offline pyannote community-1 pipeline on the Neural Engine from a pinned, hash-checked pack (`packs/pyannote-community1-coreml`), never downloading. See [speaker transcripts and notes](docs/speaker-notes.md).
+
 ## Explicit cloud client
 
 Import `PomvoxCleanupCloud` from the root package. Connect it only after the host has deliberately chosen remote processing and supplied an endpoint, pack/version and `CredentialProvider`. Calling `clean` transmits the request to that endpoint.
@@ -144,6 +160,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing and [SECURITY.md](SE
 | [Contract](docs/contract.md) | Request limits, scheduling, deadlines, edits, provenance and privacy |
 | [Packs](docs/packs.md) | Layout, hashes, compatibility, licensing and installation |
 | [Cloud](docs/cloud.md) | Explicit client setup and versioned wire protocol |
+| [Speaker transcripts and notes](docs/speaker-notes.md) | Speaker turns, per-turn cleaning, deterministic notes and Markdown |
 | [Testing](docs/testing.md) | Test strategy, reproducible commands and production release gates |
 | [Validation](docs/validation.md) | Original test/benchmark evidence and its limitations |
 | [Hardening](docs/hardening.md) | Expanded coverage, sanitizer results and regression repairs |

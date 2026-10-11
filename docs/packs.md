@@ -32,6 +32,28 @@ Unknown or missing keys at either level fail validation. A pack declaring a styl
 
 Hosts read the answer as `ValidatedPack.capabilities` before open and `Cleaner.capabilities` after. A schema 1 pack reports `PackCapabilities.frozenBaseline`: no styles, no speculative switch, no auxiliary generation, memory not measured, and the request vocabulary limits. `simplewords-v3` is schema 1; its manifest is unchanged.
 
+## Diarizer packs
+
+A diarizer pack is a second, independent pack format for the optional
+diarization runtime: `pack.json` (schema 1, fields `schemaVersion`, `id`,
+`version`, `publisher`, `license`, `licenseURL`, `modelID`, `modelRevision`,
+`runtime`, `pipeline`, `attribution`, `artifacts`, `limitations`, `evidence`)
+plus exactly the 23 files `DiarizerPackLoader.artifactPaths` names under
+`speaker-diarization/`: the `Segmentation`, `FBank`, `Embedding` and
+`PldaRho` compiled Core ML bundles (five files each), `plda-parameters.json`,
+and the upstream `LICENSE` and `NOTICE.md`. Paths are nested, unlike the flat
+cleanup pack; symlinks, extra files or directories, unknown manifest fields, a
+runtime other than `fluidaudio-0.15.5` or a pipeline other than
+`pyannote-community-1-offline` fail validation. The manifest digest is SHA-256
+over the exact manifest bytes.
+
+The pinned instance is [`packs/pyannote-community1-coreml/pack.json`](../packs/pyannote-community1-coreml/pack.json):
+`FluidInference/speaker-diarization-coreml` at revision
+`df2625ac79a7ac6b65ad868fee6d80f320da4232`, CC-BY-4.0, about 21 MB installed.
+`scripts/prepare-diarizer-pack.py <snapshot> <destination>` installs it from a
+snapshot already on disk with the same copy-verify-publish discipline as the
+cleanup installer. See [speaker transcripts and notes](speaker-notes.md#diarization).
+
 ## Baseline
 
 - Pack: `simplewords-v3`, `0.1.0-preview`.

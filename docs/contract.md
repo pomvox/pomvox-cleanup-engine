@@ -51,6 +51,12 @@ Timings report preparation, queue, tokenization, prefill, decode/inference, vali
 
 Local request code contains no network client, downloads, telemetry or content logging. Setup paths are private filesystem paths and should not be sent to external logging services. Local pack manifests are developer-trusted, hash-checked installations; hash validation does not authenticate a publisher. Signed remote pack distribution is future work. Installed files must remain immutable between validation and loading; hostile concurrent filesystem mutation is outside the preview trust model.
 
+## Transcripts and notes
+
+A `Transcript` is an ordered list of `SpeakerTurn`s (optional speaker label, text, optional span in seconds), at most 2,048 turns. `clean(_ transcript:options:)` on any `Cleaning` value sends one ordinary request per turn, in order, and returns one `TurnResult` per turn with the same speaker and span; the engine never merges, splits, reorders or relabels turns. Each turn is admitted, guarded, deadlined and falls back exactly as a dictation does. An optional overall deadline caps the whole call; once spent, remaining turns are `.fallback(.timedOut)` without inference. A turn over the admission limit is `.fallback(.unavailable)` without inference, not split or truncated. Turns the model never sees carry `Provenance.skipped` and one warning naming why (`transcript-budget-exhausted`, `turn-exceeds-admission-limit`, `turn-budget-hopeless`); every such turn is its exact bytes with no edits. Cancellation throws and delivers nothing. This is a batch call on the same one-request worker as live dictation.
+
+`Transcript.attribute(words:segments:)` is a pure function from timed words and speaker segments to turns; the nonempty input words appear in the output exactly once, in order. `Notes.extract` (module `PomvoxNotes`) runs no model: every note item is a verbatim sentence or list line of a cleaned turn with its UTF-8 byte range, participants are counts, and the whole `TranscriptResult` is carried in the value. See [speaker transcripts and notes](speaker-notes.md).
+
 ## Integration additions
 
 See [gap review](integration-gap-review.md) for dispositions and limitations, and the

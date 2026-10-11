@@ -53,6 +53,36 @@ The model suite explicitly skips live inference when `POMVOX_TEST_PACK` is absen
 
 Run consumer benchmarks **after** tests and other inference have finished. Report hardware, OS, build configuration, exact artifacts, preparation, every outcome, sample counts and full-path timing. Never replace failures with successful-only latency statistics.
 
+## Diarizer runtime checks
+
+The optional `Runtime/Diarization` package is not part of `check.py` or public CI;
+it needs Apple Silicon, FluidAudio 0.15.5 resolved from its repository, and an
+installed diarizer pack. Its tests skip the model cases unless
+`POMVOX_TEST_DIARIZER_PACK` names a validated pack, and say so. The fixture is
+synthesized at test time with macOS `say` (two voices), so no audio is committed
+and the schedule is known exactly. Run it with network denied to prove that
+nothing downloads:
+
+```sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+python3 scripts/prepare-diarizer-pack.py /path/to/speaker-diarization-coreml-snapshot .local/pyannote-community1-coreml
+swift build --package-path Runtime/Diarization --scratch-path /tmp/pomvox-diarizer --build-tests
+POMVOX_TEST_DIARIZER_PACK=$PWD/.local/pyannote-community1-coreml \
+POMVOX_DIARIZER_EVIDENCE=/tmp/diarizer-evidence.json \
+  sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+  xcrun xctest /tmp/pomvox-diarizer/debug/PomvoxDiarizationFluidPackageTests.xctest
+```
+
+Build outside the sandbox (SwiftPM resolves FluidAudio from its repository and
+cannot compile a manifest with the network denied); run the built bundle inside
+it, as for the MLX model tests. A green run proves the lifecycle (deadline,
+quarantine, close), the pack validator, and that two synthetic voices come back
+as two consistent speakers. `ScenarioTests` adds seven synthesized recordings
+(two to four voices, long, noisy, short interjections, configuration variants)
+and writes every outcome to the path in `POMVOX_DIARIZER_SCENARIO_EVIDENCE`. It is not a quality measurement on real meetings;
+that remains a gap in the release gates below. The 2026-10-11 run is recorded in
+`docs/evidence/diarizer-synthetic-2026-10-11.json`.
+
 ## Release gates
 
 Before a stable production release:
