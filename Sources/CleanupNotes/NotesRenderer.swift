@@ -28,44 +28,87 @@ public enum NotesRenderer {
             self.sections = sections; self.includeParticipants = includeParticipants
             self.includeTranscript = includeTranscript; self.includeTimestamps = includeTimestamps
         }
+
+        func name(_ speaker: SpeakerLabel?) -> String {
+            guard let speaker else { return unknownSpeakerName }
+            return speakerNames[speaker] ?? speaker.rawValue
+        }
     }
 
     public static func markdown(_ notes: Notes, options: Options = Options()) -> String {
-        var lines: [String] = []
-        if let title = options.title { lines += ["# " + title, ""] }
-        func name(_ speaker: SpeakerLabel?) -> String {
-            guard let speaker else { return options.unknownSpeakerName }
-            return options.speakerNames[speaker] ?? speaker.rawValue
-        }
-        if options.includeParticipants, !notes.participants.isEmpty {
-            lines.append("## Participants")
-            for participant in notes.participants {
-                var detail = "\(participant.turns) turn\(participant.turns == 1 ? "" : "s"), \(participant.words) word\(participant.words == 1 ? "" : "s")"
-                if let seconds = participant.speakingSeconds { detail += ", " + clock(seconds) }
-                lines.append("- \(name(participant.speaker)): \(detail)")
-            }
+        join(header(options) + participants(notes, options) + candidates(notes, options, suffix: "") + transcript(notes, options))
+    }
+
+    /// The same document with a model's cited notes first. Model sections are
+    /// marked "(model)" and each note names the turns it cites; the quoted
+    /// candidates follow, marked "(quoted)", and the transcript is unchanged.
+    public static func markdown(_ notes: Notes, model: ModelNotes, options: Options = Options()) -> String {
+        var lines = header(options) + participants(notes, options)
+        let groups: [([CitedNote], String)] = [(model.summary, "Summary"), (model.actionItems, "Action items (model)"),
+                                               (model.decisions, "Decisions (model)"), (model.questions, "Questions (model)")]
+        for (entries, heading) in groups where !entries.isEmpty {
+            lines.append("## " + heading)
+            for note in entries { lines.append("- \(note.text) — \(citation(note, notes, options))") }
             lines.append("")
         }
+        lines += candidates(notes, options, suffix: " (quoted)") + transcript(notes, options)
+        return join(lines)
+    }
+
+    private static func citation(_ note: CitedNote, _ notes: Notes, _ options: Options) -> String {
+        note.turns.map { index -> String in
+            guard notes.source.turns.indices.contains(index) else { return "turn \(index)" }
+            let turn = notes.source.turns[index].turn
+            let who = options.name(turn.speaker)
+            return turn.span.map { who + " " + clock($0.start) } ?? who
+        }.joined(separator: ", ")
+    }
+
+    private static func header(_ options: Options) -> [String] {
+        options.title.map { ["# " + $0, ""] } ?? []
+    }
+
+    private static func participants(_ notes: Notes, _ options: Options) -> [String] {
+        guard options.includeParticipants, !notes.participants.isEmpty else { return [] }
+        var lines = ["## Participants"]
+        for participant in notes.participants {
+            var detail = "\(participant.turns) turn\(participant.turns == 1 ? "" : "s"), \(participant.words) word\(participant.words == 1 ? "" : "s")"
+            if let seconds = participant.speakingSeconds { detail += ", " + clock(seconds) }
+            lines.append("- \(options.name(participant.speaker)): \(detail)")
+        }
+        return lines + [""]
+    }
+
+    private static func candidates(_ notes: Notes, _ options: Options, suffix: String) -> [String] {
         let headings: [(NoteKind, String)] = [(.actionItem, "Action items"), (.decision, "Decisions"),
                                               (.question, "Questions"), (.listItem, "List items")]
+        var lines: [String] = []
         for (kind, heading) in headings where options.sections.contains(kind) {
             let items = notes.items(of: kind)
             guard !items.isEmpty else { continue }
-            lines.append("## " + heading)
-            for item in items { lines.append("- \(name(item.speaker)): \(item.text)") }
+            lines.append("## " + heading + suffix)
+            for item in items { lines.append("- \(options.name(item.speaker)): \(item.text)") }
             lines.append("")
         }
-        if options.includeTranscript, !notes.source.turns.isEmpty {
-            lines.append("## Transcript")
-            for result in notes.source.turns {
-                var prefix = "**" + name(result.turn.speaker) + "**"
-                if options.includeTimestamps, let span = result.turn.span {
-                    prefix += " (" + clock(span.start) + "–" + clock(span.end) + ")"
-                }
-                lines.append(prefix + ": " + result.text)
-                lines.append("")
+        return lines
+    }
+
+    private static func transcript(_ notes: Notes, _ options: Options) -> [String] {
+        guard options.includeTranscript, !notes.source.turns.isEmpty else { return [] }
+        var lines = ["## Transcript"]
+        for result in notes.source.turns {
+            var prefix = "**" + options.name(result.turn.speaker) + "**"
+            if options.includeTimestamps, let span = result.turn.span {
+                prefix += " (" + clock(span.start) + "–" + clock(span.end) + ")"
             }
+            lines.append(prefix + ": " + result.text)
+            lines.append("")
         }
+        return lines
+    }
+
+    private static func join(_ lines: [String]) -> String {
+        var lines = lines
         while lines.last == "" { lines.removeLast() }
         return lines.joined(separator: "\n") + "\n"
     }

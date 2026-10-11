@@ -138,3 +138,71 @@ protocol. It does not run a model. Everything a real service still needs
 above and unchanged; which provider sits behind the endpoint (pyannoteAI,
 Deepgram, AssemblyAI, a self-hosted pyannote, …) is the host's choice, outside
 this SDK.
+
+## Notes — protocol version 1
+
+`CloudNotes` asks an endpoint for a model-written summary of a cleaned
+transcript, with `CloudCleaner`'s rules (explicit endpoint, credentials and
+pack; HTTPS or loopback; one in flight; no retries or redirects; client-side
+deadline). It returns `ModelNotes` only after every note has been checked
+against the transcript that was sent. Failures throw `ModelNotesError`
+(`busy`, `timedOut`, `transport`, `invalidResponse`, `unavailable`); the host
+keeps the deterministic `Notes` it already has.
+
+```swift
+import PomvoxCleanupCloud
+
+let writer = try CloudNotes.connect(endpoint: configuredEndpoint,
+    credentials: Tokens(fetch: acquireShortLivedToken),
+    pack: RemotePack(id: configuredNotesPack, version: configuredVersion))
+let model = try await writer.write(for: cleanedTranscript, options: NotesWriteOptions(style: "meeting", deadline: .seconds(60)))
+let markdown = NotesRenderer.markdown(Notes.extract(from: cleanedTranscript), model: model)
+```
+
+### Request
+
+`POST` JSON (`application/json`) with `Authorization: Bearer …` and
+`Idempotency-Key: <requestID>`:
+
+```json
+{"schemaVersion": 1, "requestID": "…", "pack": {"id": "…", "version": "…"},
+ "turns": [{"index": 0, "speaker": "S1", "text": "Good morning everyone.", "start": 0.0, "end": 5.1}],
+ "style": "meeting",
+ "remainingMilliseconds": 58000}
+```
+
+Turn indexes are the positions in `TranscriptResult.turns`. At most 2,048 turns
+and 512 KiB of turn text per request; `style` is optional, one line, at most 64
+bytes; the default deadline is 60 s, the maximum ten minutes.
+
+### Response
+
+HTTP 200, `application/json`, at most 1 MiB:
+
+```json
+{"schemaVersion": 1, "requestID": "…", "result": {
+  "summary":     [{"text": "The team planned the release.", "turns": [0, 5]}],
+  "actionItems": [{"text": "Send the report by Friday.", "turns": [1]}],
+  "decisions":   [], "questions": [],
+  "provenance": {"packID": "…", "packVersion": "…", "artifactDigest": "…", "modelRevision": "…",
+                 "runtime": "…", "route": "cloud", "settings": {}},
+  "timings": {"preparationMS": 0, "queueMS": 0, "inferenceMS": 1200, "validationMS": 0, "diffMS": 0, "totalMS": 1300, "budgetMS": 58000},
+  "warnings": []
+}}
+```
+
+The client requires matching schema, request id, pack id and version, route
+`cloud` with nonempty runtime, artifact digest and model revision; at most 256
+notes per list; each note one nonempty line of at most 1,024 bytes with one to
+64 citations, every one an index of a turn that was sent; finite nonnegative
+timings. Anything else is `invalidResponse`: a note without a citation, or one
+citing a turn that does not exist, is enough to refuse the whole response.
+`totalMS` and `budgetMS` are replaced by client-observed values and the server's
+`inferenceMS` is kept as `serverInferenceMS`.
+
+The citations are the contract. They do not prove a note is right, but they
+make every note checkable against a turn a person can read, and a host can
+render them (the Markdown renderer does) so a reader sees where a claim came
+from. Which model sits behind the endpoint is the host's choice, outside this
+SDK; the fixture answers with a fixed cited summary and the usual malformed
+variants.
