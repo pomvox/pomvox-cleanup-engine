@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add speaker-attributed transcripts: `Transcript`, `SpeakerTurn`, `SpeakerSegment`, `TimedWord` and the pure `Transcript.attribute(words:segments:)` alignment, plus `clean(_ transcript:options:)` on every `Cleaning` value, which cleans one turn per ordinary request and preserves speakers, spans and order. Turns the model never sees (overall deadline spent, over the admission limit, hopeless budget) keep their exact bytes with `Provenance.skipped` and a named warning. The dictation path is unchanged.
+- Add `PomvoxNotes`, deterministic notes over a cleaned transcript: participants, and action-item, decision, question and list-item candidates quoted verbatim with turn index and UTF-8 range, rendered to Markdown by `NotesRenderer`. No model writes the notes; the cue set is versioned as `pomvox-notes-v0.1`.
+
 ## 0.1.0-beta.3 — 2026-10-05
 
 - Own the output-guard specification: every guard vector from the Pomvox app's `test_cleanup.py` and `CleanupLogicTests` is a table-driven case in `GuardVectorTests` that asserts the rejection reason. `PackCapabilities.guardRules` reports the guard set identity (`CleanupLogic.rulesVersion`) through the capability query. Guard behaviour is unchanged.

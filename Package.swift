@@ -7,15 +7,18 @@ let package = Package(
     products: [
         .library(name: "PomvoxCleanup", targets: ["PomvoxCleanup"]),
         .library(name: "PomvoxCleanupCloud", targets: ["PomvoxCleanupCloud"]),
+        .library(name: "PomvoxNotes", targets: ["CleanupNotes"]),
     ],
     targets: [
         .target(name: "CleanupCore"),
         .target(name: "CleanupPacks", dependencies: ["CleanupCore"]),
+        .target(name: "CleanupNotes", dependencies: ["CleanupCore"]),
         .target(name: "PomvoxCleanup", dependencies: ["CleanupCore", "CleanupPacks"]),
         .target(name: "PomvoxCleanupCloud", dependencies: ["CleanupCore"]),
         .target(name: "PomvoxAdapterExample", dependencies: ["PomvoxCleanup"], path: "Examples/PomvoxAdapter"),
         .testTarget(name: "CleanupCoreTests", dependencies: ["CleanupCore", "PomvoxCleanup", "PomvoxAdapterExample"]),
         .testTarget(name: "CleanupPacksTests", dependencies: ["CleanupPacks", "PomvoxCleanup"]),
+        .testTarget(name: "CleanupNotesTests", dependencies: ["CleanupNotes"]),
         .testTarget(name: "PomvoxCleanupCloudTests", dependencies: ["PomvoxCleanupCloud"], exclude: ["Fixtures"]),
     ],
     swiftLanguageModes: [.v6]

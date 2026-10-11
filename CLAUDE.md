@@ -12,7 +12,9 @@ cleaned text with explicit outcomes, Unicode-safe edits, provenance and timings.
 The root package is `PomvoxCleanup` plus the explicit `PomvoxCleanupCloud`
 client; `Runtime/MLX` is the Apple Silicon runtime, exported as the separate
 `pomvox-cleanup-mlx` package by `scripts/export-mlx-release.py`. Version:
-`VERSION` (0.1.0-beta.3, public beta).
+`VERSION` (0.1.0-beta.3, public beta). Optional aspects on top of cleanup:
+speaker-attributed transcripts cleaned one turn per request, and deterministic
+notes (`PomvoxNotes`); see `docs/speaker-notes.md`.
 
 **What it is not: the app.** The SDK owns no microphone, STT, clipboard, paste,
 UI, history or telemetry; those stay in `pomvox/pomvox`. It is also not a
