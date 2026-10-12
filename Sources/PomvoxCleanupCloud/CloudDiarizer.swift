@@ -205,6 +205,19 @@ public actor CloudDiarizer: Diarizing {
         if worker == nil { session.invalidateAndCancel() }
     }
 
+    /// True once the client is closed and no worker can still touch the transport session.
+    public var resourcesReleased: Bool { closed && worker == nil }
+
+    /// Closes, then waits until the canceled worker has returned and the session
+    /// is invalidated. Cancelling the waiting task stops the wait and throws.
+    public func closeAndWait() async throws {
+        close()
+        while !resourcesReleased {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        try Task.checkCancellation()
+    }
+
     deinit { session.invalidateAndCancel() }
 }
 

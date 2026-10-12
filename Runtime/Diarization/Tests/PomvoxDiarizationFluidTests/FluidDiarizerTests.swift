@@ -1,5 +1,4 @@
 import AVFoundation
-import CryptoKit
 import FluidAudio
 import XCTest
 @testable import PomvoxDiarizationFluid
@@ -161,12 +160,14 @@ final class FluidDiarizerTests: XCTestCase {
             _ = try await diarizer.diarize(DiarizationRequest(samples: samples, deadline: .milliseconds(1)))
             XCTFail("a 1 ms deadline must not succeed")
         } catch DiarizationError.timedOut {}
-        let quarantined = await diarizer.availability
-        XCTAssertEqual(quarantined, .quarantined)
-        do {
-            _ = try await diarizer.diarize(DiarizationRequest(samples: samples))
-            XCTFail("a request during quarantine must be refused")
-        } catch DiarizationError.busy {}
+        // The expired worker is told to cancel. If it had not entered the pipeline it
+        // skips it and may already be back; otherwise it runs on and admission refuses.
+        if await diarizer.availability == .quarantined {
+            do {
+                _ = try await diarizer.diarize(DiarizationRequest(samples: samples))
+                XCTFail("a request during quarantine must be refused")
+            } catch DiarizationError.busy {}
+        }
         let waitStart = ContinuousClock.now
         while await diarizer.availability != .ready {
             XCTAssertLessThan(waitStart.duration(to: .now), .seconds(180), "worker never returned")
@@ -188,26 +189,56 @@ final class FluidDiarizerTests: XCTestCase {
         } catch DiarizationError.unavailable {}
     }
 
+    /// Cancel mid-diarization on the real pipeline, close and wait, reopen, process
+    /// again. Records how long the release took against an uncancelled run of the
+    /// same audio: FluidAudio 0.15.5 cannot be interrupted once it is running.
+    func testRealCancelThenCloseAndWaitThenReopen() async throws {
+        let first = try await openDiarizer()
+        let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("pomvox-diarizer-cancel-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        let (meeting, _) = try SyntheticMeeting.build(in: scratch)
+        let long = Array([[Float]](repeating: meeting, count: 6).joined())
+        let started = ContinuousClock.now
+        let request = Task { try await first.diarize(DiarizationRequest(samples: long, deadline: .seconds(600))) }
+        try await Task.sleep(for: .milliseconds(300))
+        let cancelAt = ContinuousClock.now
+        request.cancel()
+        do { _ = try await request.value; XCTFail("canceled request must throw") } catch is CancellationError {}
+        let cancelReturnMS = cancelAt.duration(to: .now).milliseconds
+        XCTAssertLessThan(cancelReturnMS, 1_000, "a canceled caller must stop waiting at once")
+        try await first.closeAndWait()
+        let releasedAfterMS = started.duration(to: .now).milliseconds
+        let released = await first.resourcesReleased
+        XCTAssertTrue(released)
+
+        let second = try await openDiarizer()
+        let fullStart = ContinuousClock.now
+        let full = try await second.diarize(DiarizationRequest(samples: long, deadline: .seconds(600)))
+        let fullMS = fullStart.duration(to: .now).milliseconds
+        XCTAssertTrue(full.isValid)
+        let again = try await second.diarize(DiarizationRequest(samples: meeting, deadline: .seconds(120)))
+        XCTAssertEqual(again.speakerCount, 2)
+        try await second.closeAndWait()
+
+        let record: [String: Any] = [
+            "audioSeconds": Double(long.count) / 16_000, "cancelAfterMS": 300,
+            "cancelReturnMS": cancelReturnMS, "startToReleaseMS": releasedAfterMS,
+            "uncancelledRunMS": fullMS, "reopenedSpeakers": again.speakerCount,
+            "hardware": sysctlString("hw.model"), "os": ProcessInfo.processInfo.operatingSystemVersionString,
+        ]
+        let data = try JSONSerialization.data(withJSONObject: record, options: [.prettyPrinted, .sortedKeys])
+        print("diarizer-cancel-evidence: " + String(decoding: data, as: UTF8.self))
+        if let path = ProcessInfo.processInfo.environment["POMVOX_DIARIZER_CANCEL_EVIDENCE"] {
+            try (data + Data("\n".utf8)).write(to: URL(fileURLWithPath: path))
+        }
+    }
+
     /// No pack, no model: a shape-valid pack with fake bytes fails to load with a
     /// clean error, after forbidding downloads for the process.
     func testOpenNeverDownloadsAndFailsCleanlyOnFakeBundles() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("pomvox-fake-diarizer-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: root) }
-        var artifacts: [[String: Any]] = []
-        for (index, path) in DiarizerPackLoader.artifactPaths.sorted().enumerated() {
-            let url = root.appendingPathComponent(path)
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let data = Data(repeating: UInt8(truncatingIfNeeded: index + 1), count: 32)
-            try data.write(to: url)
-            artifacts.append(["path": path, "bytes": data.count, "sha256": SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()])
-        }
-        let manifest: [String: Any] = [
-            "schemaVersion": 1, "id": "fake", "version": "0.0.1", "publisher": "test", "license": "CC-BY-4.0",
-            "licenseURL": "https://example.invalid", "modelID": "x/y", "modelRevision": String(repeating: "b", count: 40),
-            "runtime": DiarizerPackLoader.runtimeVersion, "pipeline": DiarizerPackLoader.pipeline,
-            "attribution": ["nobody"], "artifacts": artifacts, "limitations": ["fake"], "evidence": "none",
-        ]
-        try JSONSerialization.data(withJSONObject: manifest).write(to: root.appendingPathComponent("pack.json"))
+        try FakeDiarizerPack.write(to: root)
         let pack = try DiarizerPackLoader.validate(directory: root)
         do {
             _ = try await FluidDiarizer.open(pack: pack)

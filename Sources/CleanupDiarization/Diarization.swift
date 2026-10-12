@@ -165,5 +165,19 @@ public struct SpeakerSegmentation: Codable, Equatable, Sendable {
 /// request returns, even after cancellation or a passed deadline.
 public protocol Diarizing: Sendable {
     func diarize(_ request: DiarizationRequest) async throws -> SpeakerSegmentation
+    /// Stops admission; may return before a running request's resources are released.
     func close() async
+    /// Stops admission and returns once no request is running and resources are
+    /// released. Cancelling the waiting task stops the wait and throws; it never
+    /// reopens admission.
+    func closeAndWait() async throws
+}
+
+extension Diarizing {
+    /// For a diarizer whose `close()` already releases everything before returning.
+    /// One that keeps resources alive for a running request must implement it.
+    public func closeAndWait() async throws {
+        await close()
+        try Task.checkCancellation()
+    }
 }

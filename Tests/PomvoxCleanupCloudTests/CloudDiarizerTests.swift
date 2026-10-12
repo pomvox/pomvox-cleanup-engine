@@ -128,6 +128,31 @@ final class CloudDiarizerTests: XCTestCase, @unchecked Sendable {
         catch DiarizationError.unavailable {}
     }
 
+    /// Cancel mid-request, close, and wait: the wait ends only after the canceled
+    /// worker has returned (the session is invalidated then, never under it), the
+    /// closed client stays closed, and a new client works.
+    func testCancelThenCloseAndWaitThenReconnect() async throws {
+        let (server, port) = try server()
+        defer { stop(server) }
+        let slow = try diarizer(port, "slow")
+        let cancelled = Task { try await slow.diarize(DiarizationRequest(samples: samples, deadline: .seconds(5))) }
+        try await Task.sleep(for: .milliseconds(30))
+        cancelled.cancel()
+        do { _ = try await cancelled.value; XCTFail("must throw") } catch is CancellationError {}
+        try await slow.closeAndWait()
+        let released = await slow.resourcesReleased
+        XCTAssertTrue(released)
+        let closed = await slow.availability
+        XCTAssertEqual(closed, .closed)
+        do { _ = try await slow.diarize(DiarizationRequest(samples: samples)); XCTFail("closed must refuse") }
+        catch DiarizationError.unavailable {}
+        try await slow.closeAndWait() // idempotent
+        let fresh = try diarizer(port, "ok")
+        let result = try await fresh.diarize(DiarizationRequest(samples: samples, deadline: .seconds(5)))
+        XCTAssertTrue(result.isValid)
+        try await fresh.closeAndWait()
+    }
+
     func testRequestLimitsAndConfigurationAreRefusedBeforeAnyUpload() async throws {
         let remote = try CloudDiarizer.connect(endpoint: URL(string: "http://127.0.0.1:1/d/ok")!,
                                                credentials: Credentials(), pack: RemotePack(id: "diar-test", version: "1.0.0"))
