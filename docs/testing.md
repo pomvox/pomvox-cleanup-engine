@@ -104,7 +104,7 @@ that remains a gap in the release gates below. The 2026-10-11 run is recorded in
 
 Before a stable production release:
 
-- Pass Debug, Release, both sanitizers, installer and real-model suites on each supported platform/toolchain; retain evidence for the exact source version.
+- Pass Debug, Release, both sanitizers, installer and real-model suites on each supported platform/toolchain; retain evidence for the exact source version. For iOS that means the [device validation protocol](ios-validation.md), which no session has run yet.
 - Validate a separate consumer and actual Pomvox development integration: cancellation, insertion, concurrent STT, memory pressure, sleep/wake, close/reopen and long-session soak.
 - Establish a reviewed, consented quality corpus and thresholds for meaning changes, names, numbers, negation, prompt injection and unsupported-language behavior. Keep private transcripts outside this public repository.
 - Measure cold/warm latency, memory and energy under representative load. Define supported workload limits and service objectives from those measurements.

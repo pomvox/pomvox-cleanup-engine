@@ -168,6 +168,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing and [SECURITY.md](SE
 | [Cloud](docs/cloud.md) | Explicit client setup and versioned wire protocol |
 | [Speaker transcripts and notes](docs/speaker-notes.md) | Speaker turns, per-turn cleaning, deterministic notes and Markdown |
 | [Testing](docs/testing.md) | Test strategy, reproducible commands and production release gates |
+| [iOS device validation](docs/ios-validation.md) | The on-device checklist and an empty results matrix; nothing measured on a phone yet |
 | [Validation](docs/validation.md) | Original test/benchmark evidence and its limitations |
 | [Hardening](docs/hardening.md) | Expanded coverage, sanitizer results and regression repairs |
 | [Source baseline](docs/baseline.md) | Extraction provenance and dependency identities |
