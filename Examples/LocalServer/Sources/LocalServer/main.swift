@@ -1,4 +1,4 @@
-import CleanupNotes
+import PomvoxNotes
 import FluidAudio
 import Foundation
 import PomvoxCleanupCloud

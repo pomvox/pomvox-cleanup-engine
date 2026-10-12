@@ -9,8 +9,8 @@ dictation path. Nothing here runs unless a host calls it.
 | --- | --- | --- |
 | Transcript | `CleanupCore` (`PomvoxCleanup`) | `SpeakerLabel`, `TimeSpan`, `SpeakerSegment`, `TimedWord`, `SpeakerTurn`, `Transcript`, `Transcript.attribute`, `TranscriptResult` |
 | Transcript cleaning | `PomvoxCleanup` | `Cleaning.clean(_ transcript:options:)`, `TranscriptCleanOptions` |
-| Notes | `CleanupNotes` (product `PomvoxNotes`) | `Notes.extract`, `NoteItem`, `Participant`, `NoteHeuristics`, `NotesRenderer.markdown` |
-| Diarization contract | `CleanupDiarization` (product `PomvoxDiarization`) | `Diarizing`, `DiarizationRequest`, `SpeakerSegmentation`, `DiarizerPackLoader` |
+| Notes | `PomvoxNotes` (implementation in `CleanupNotes`) | `Notes.extract`, `NoteItem`, `Participant`, `NoteHeuristics`, `NotesRenderer.markdown` |
+| Diarization contract | `PomvoxDiarization` (implementation in `CleanupDiarization`) | `Diarizing`, `DiarizationRequest`, `SpeakerSegmentation`, `DiarizerPackLoader` |
 | Local diarizer | `Runtime/Diarization` (product `PomvoxDiarizationFluid`, optional) | `FluidDiarizer` over FluidAudio 0.15.5's offline pyannote community-1 pipeline |
 | Cloud diarizer | `PomvoxCleanupCloud` | `CloudDiarizer`: explicit endpoint and credentials, wire protocol in `docs/cloud.md` |
 | Model notes | `PomvoxNotes` + `PomvoxCleanupCloud` | `ModelNotes`, `CloudNotes`: cited notes from an explicit endpoint, validated against the transcript |
@@ -210,6 +210,12 @@ Rules the runtime keeps:
 Validated on macOS 15 (Apple M1, 16 GiB, Xcode 26.3). FluidAudio documents a
 Core ML BNNS crash on macOS 14 for this pipeline, fixed in macOS 15; the SDK's
 deployment floor is unchanged, but the diarizer is not validated below macOS 15.
+
+On iOS the package builds for iOS 17 (FluidAudio 0.15.5's own floor), and an
+iPhone app links it with no deployment-target override. It has **not** run on a
+phone here: Neural Engine load time, memory, thermal state and background
+behaviour are unmeasured. The same applies to cleanup through `Runtime/MLX`, whose
+pinned pack is sized for a Mac (#30).
 
 ### Testing it
 

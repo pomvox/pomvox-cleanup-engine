@@ -19,12 +19,14 @@ The engine is [MIT licensed](LICENSE). Baseline weights are separate artifacts w
 
 | Component | Requirements | Validated environment |
 | --- | --- | --- |
-| Core, local facade, cloud client | macOS 14+, Swift 6 | Swift 6.2.4, macOS 15.7.4 |
+| Core, local facade, cloud client | macOS 14+ or iOS 17+, Swift 6 | Swift 6.2.4, macOS 15.7.4; iOS: builds only, see below |
 | MLX runtime | Apple Silicon, full Xcode, pinned installed model | Apple M1, 16 GiB, Xcode 26.3 |
 | Diarization runtime (optional) | Apple Silicon, macOS 15 recommended, pinned installed diarizer pack | Apple M1, 16 GiB, macOS 15, Xcode 26.3 |
 | Tests and asset preparation | Python 3; XcodeGen for the separate consumer | Debug/Release and sanitizer runs; see [evidence](docs/validation.md) |
 
-macOS 14 is the declared deployment minimum; it has not yet been exercised in the release validation matrix. Linux, Intel inference, C/Python/Node bindings and multiple resident local models are not supported in this milestone.
+macOS 14 is the declared deployment minimum; it has not yet been exercised in the release validation matrix.
+
+**iOS 17 is a build target, not a validated platform.** All three packages declare `.iOS(.v17)`, the floor their dependencies set (mlx-swift-lm, swift-tokenizers and FluidAudio 0.15.5 each require iOS 17). An iPhone app with deployment target iOS 17 builds against `PomvoxCleanup`, `PomvoxNotes`, `PomvoxCleanupMLX` and `PomvoxDiarizationFluid` without overriding `IPHONEOS_DEPLOYMENT_TARGET`; `Examples/iOSConsumer` is that check. Nothing has run on an iPhone here: model load, memory, thermal and background behaviour are **not validated**, and the pinned `simplewords-v3` pack (8-bit) is sized for a Mac, not a phone's per-app memory budget ([#30](https://github.com/pomvox/pomvox-cleanup-engine/issues/30)). Linux, Intel inference, C/Python/Node bindings and multiple resident local models are not supported in this milestone.
 
 ## Quick start: local cleanup
 

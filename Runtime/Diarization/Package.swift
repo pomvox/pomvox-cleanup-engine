@@ -7,7 +7,7 @@ import PackageDescription
 // the Pomvox app constrains it to 0.15.x, and the pack manifest names this release.
 let package = Package(
     name: "PomvoxDiarizationFluid",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
         .library(name: "PomvoxDiarizationFluid", targets: ["PomvoxDiarizationFluid"]),
         .executable(name: "speaker-notes-example", targets: ["SpeakerNotesExample"]),
