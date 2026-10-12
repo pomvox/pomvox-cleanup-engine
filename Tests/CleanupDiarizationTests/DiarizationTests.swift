@@ -180,3 +180,28 @@ final class DiarizationTypesTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(SpeakerSegmentation.self, from: data), value)
     }
 }
+
+/// A conformer that implements only `diarize` and `close` still gets `closeAndWait`.
+private actor MinimalDiarizer: Diarizing {
+    private(set) var closes = 0
+    func diarize(_ request: DiarizationRequest) async throws -> SpeakerSegmentation {
+        throw DiarizationError.unavailable("test double")
+    }
+    func close() { closes += 1 }
+}
+
+final class DiarizingDefaultsTests: XCTestCase {
+    func testDefaultCloseAndWaitClosesAndHonoursCancellation() async throws {
+        let diarizer = MinimalDiarizer()
+        try await diarizer.closeAndWait()
+        let closes = await diarizer.closes
+        XCTAssertEqual(closes, 1)
+        let cancelled = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            try await diarizer.closeAndWait()
+        }
+        do { try await cancelled.value; XCTFail("a canceled wait must throw") } catch is CancellationError {}
+        let closedAgain = await diarizer.closes
+        XCTAssertEqual(closedAgain, 2, "cancellation stops the wait, not the close")
+    }
+}

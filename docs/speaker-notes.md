@@ -194,7 +194,9 @@ the contract (`PomvoxDiarization`, no third-party dependencies):
   count, `Provenance` (route `local` or `cloud`), timings and warnings.
   `relabeled()` renames speakers `S1`, `S2`, ... in order of first appearance;
   runtimes return that form.
-- `Diarizing`: `diarize(_:)` and `close()`. Errors are thrown
+- `Diarizing`: `diarize(_:)`, `close()` and `closeAndWait()`. The default
+  `closeAndWait()` only calls `close()`, which is right for a diarizer that holds
+  nothing past `close()`; one that does implements it. Errors are thrown
   (`DiarizationError`): `busy`, `timedOut`, `noSpeech`, `unavailable`,
   `failed`. There is no text to fall back to, so there is no fallback result.
 - `DiarizerPackLoader`: an installed diarizer pack is `pack.json` plus exactly
@@ -223,7 +225,7 @@ let pack = try DiarizerPackLoader.validate(directory: installedDiarizerPack)
 let diarizer = try await FluidDiarizer.open(pack: pack)      // never downloads
 let who = try await diarizer.diarize(DiarizationRequest(samples: samples16k, speakers: 2...4))
 let transcript = Transcript.attribute(words: words, segments: who.segments)
-await diarizer.close()
+try await diarizer.closeAndWait() // returns once the models are released
 ```
 
 Rules the runtime keeps:
@@ -234,11 +236,27 @@ Rules the runtime keeps:
   downloading. A host that also runs Parakeet through FluidAudio must have those
   models on disk already (the Pomvox app does).
 - **One request, no queue.** A second `diarize` while one runs throws `busy`.
-- **Deadlines are the caller's.** The pipeline has no cancellation point, so the
-  actor enforces the budget: a late result is discarded, the waiter gets
-  `timedOut` (or `CancellationError`), and admission stays refused
-  (`availability == .quarantined`) until the worker returns. Models stay alive
-  until then; `close()` releases them when the worker is done.
+- **Deadlines are the caller's.** The actor enforces the budget: a late result
+  is discarded, the waiter gets `timedOut` (or `CancellationError`) at once, and
+  admission stays refused (`availability == .quarantined`) until the worker
+  returns. Models stay alive until then.
+- **A running pipeline cannot be interrupted.** On cancel, deadline or close the
+  worker is told to cancel. If it has not entered the pipeline it skips it.
+  Otherwise it runs to the end: FluidAudio 0.15.5 runs segmentation and
+  embedding in detached tasks that the caller's cancellation does not reach, and
+  clustering has no cancellation point. On an Apple M1 (macOS 15.7.4, Debug, 220 s
+  of synthetic two-voice audio), a request canceled 300 ms in returned to its
+  caller in under 1 ms, and its models were released 2.9 s after the start,
+  against 2.8 s for an uncancelled run of the same audio (one run each,
+  `testRealCancelThenCloseAndWaitThenReopen`, recorded in
+  `docs/evidence/diarizer-cancel-2026-10-11.json`).
+- **`close()` vs `closeAndWait()`.** `close()` stops admission and fails a waiting
+  request with `unavailable`. Then it returns, possibly before the models are released.
+  `closeAndWait()` (also on `Diarizing`, and on `CloudDiarizer`) returns once no
+  worker runs and the models are released (`resourcesReleased`), like
+  `Cleaner.closeAndWait()`. Cancelling the wait throws and never reopens
+  admission. A host that must free memory, for example before backgrounding on
+  iOS, awaits `closeAndWait()` before it opens another diarizer or cleaner.
 - **Labels are first-appearance order**, `S1` first, and segments are sorted.
   Degenerate (zero-length or invalid) pipeline segments are dropped with a
   warning naming the count.
