@@ -122,6 +122,10 @@ let markdown = NotesRenderer.markdown(Notes.extract(from: cleaned))
 
 A turn the model never sees keeps its exact bytes and says why in a warning. Diarization itself needs audio and a model: the root package carries only the `PomvoxDiarization` contract and a verified diarizer pack format, and the optional `Runtime/Diarization` package (`PomvoxDiarizationFluid`) runs FluidAudio 0.15.5's offline pyannote community-1 pipeline on the Neural Engine from a pinned, hash-checked pack (`packs/pyannote-community1-coreml`), never downloading. See [speaker transcripts and notes](docs/speaker-notes.md).
 
+### Try it from a browser
+
+A browser cannot run the SDK, but it can talk to a local companion process that does. [`Examples/LocalServer`](Examples/LocalServer/README.md) serves the cleanup and diarization wire protocols on `127.0.0.1` over the real local runtimes, plus a demo endpoint for the whole speaker-notes pipeline, with a one-page web app: record in the browser, get who-said-what, cleaned turns and notes back.
+
 ## Explicit cloud client
 
 Import `PomvoxCleanupCloud` from the root package. Connect it only after the host has deliberately chosen remote processing and supplied an endpoint, pack/version and `CredentialProvider`. Calling `clean` transmits the request to that endpoint.
