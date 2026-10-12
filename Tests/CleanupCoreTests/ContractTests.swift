@@ -88,7 +88,9 @@ final class ContractTests: XCTestCase, @unchecked Sendable {
     func testQueueLimitAndQueueDeadline() async throws {
         let runtime = ControlledRuntime()
         let session = try CleanupSession(runtime: runtime, provenance: provenance, queueCapacity: 1)
-        let first = Task { try await session.clean(CleanupRequest("hello", deadline: .seconds(2))) }
+        // The test releases this request itself; its deadline is only a safety bound, generous
+        // enough that a slow sanitizer runner never expires it first (it did at 2 s on CI).
+        let first = Task { try await session.clean(CleanupRequest("hello", deadline: .seconds(30))) }
         await runtime.waitStarted()
         let second = Task { try await session.clean(CleanupRequest("queued", deadline: .milliseconds(150))) }
         try await Task.sleep(for: .milliseconds(20))
