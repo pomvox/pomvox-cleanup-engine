@@ -20,7 +20,7 @@ let package = Package(
         .target(name: "PomvoxDiarization", dependencies: ["CleanupDiarization"]),
         .target(name: "PomvoxCleanupCloud", dependencies: ["CleanupCore", "CleanupDiarization", "CleanupNotes"]),
         .target(name: "PomvoxAdapterExample", dependencies: ["PomvoxCleanup"], path: "Examples/PomvoxAdapter"),
-        .testTarget(name: "CleanupCoreTests", dependencies: ["CleanupCore", "PomvoxCleanup", "PomvoxAdapterExample"]),
+        .testTarget(name: "CleanupCoreTests", dependencies: ["CleanupCore", "PomvoxCleanup", "PomvoxAdapterExample", "CleanupNotes"]),
         .testTarget(name: "CleanupPacksTests", dependencies: ["CleanupPacks", "PomvoxCleanup"]),
         .testTarget(name: "CleanupNotesTests", dependencies: ["CleanupNotes", "PomvoxNotes", "PomvoxDiarization"]),
         .testTarget(name: "CleanupDiarizationTests", dependencies: ["CleanupDiarization"]),

@@ -210,7 +210,13 @@ public struct Transcript: Codable, Equatable, Sendable {
 public struct TurnResult: Codable, Equatable, Sendable {
     public let turn: SpeakerTurn
     public let result: CleanupResult
-    public init(turn: SpeakerTurn, result: CleanupResult) { self.turn = turn; self.result = result }
+    /// Present only when opt-in segmentation split this turn: one outcome per
+    /// segment, in order. Nil for a turn cleaned as one request or not at all.
+    public let segments: [SegmentOutcome]?
+    public init(turn: SpeakerTurn, result: CleanupResult) { self.init(turn: turn, result: result, segments: nil) }
+    public init(turn: SpeakerTurn, result: CleanupResult, segments: [SegmentOutcome]?) {
+        self.turn = turn; self.result = result; self.segments = segments
+    }
     public var text: String { result.text }
 }
 
