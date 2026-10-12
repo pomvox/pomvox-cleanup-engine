@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.0-beta.1 — 2026-10-11
+
 - Declare iOS 17 in the root package, `Runtime/MLX` and `Runtime/Diarization`. Without it an iOS 17 app could not link the runtimes (mlx-swift-lm, swift-tokenizers and FluidAudio require iOS 17, while an undeclared package defaults to iOS 12). Add `Examples/iOSConsumer`, an iPhone app that links all four libraries with no deployment-target override. Builds only: nothing is validated on a device.
 - Make `import PomvoxNotes` and `import PomvoxDiarization` work as the README and speaker-notes guide say. The products used to expose only the `CleanupNotes` and `CleanupDiarization` modules; both names now import, so existing code is unaffected.
 - Add `closeAndWait()` to `FluidDiarizer`, `CloudDiarizer` and the `Diarizing` protocol (with a default implementation that only calls `close()`, so other conformers still compile), plus `resourcesReleased`. Like `Cleaner.closeAndWait()`, it stops admission and returns only after the running worker has returned and the models or session are released. Cancelling the wait never reopens admission. A canceled, expired or closed `FluidDiarizer` request now cancels its worker, which skips the pipeline if it has not started. A pipeline that is already running is not interrupted: FluidAudio 0.15.5 has no cancellation point the caller can reach.
@@ -18,6 +20,9 @@
 - Add `PomvoxNotes`, deterministic notes over a cleaned transcript: participants, and action-item, decision, question and list-item candidates quoted verbatim with turn index and UTF-8 range, rendered to Markdown by `NotesRenderer`. No model writes the notes; the cue set is versioned as `pomvox-notes-v0.1`.
 
 ## 0.1.0-beta.3 — 2026-10-05
+
+Prepared but never tagged; these changes first ship in 0.2.0-beta.1.
+
 
 - Own the output-guard specification: every guard vector from the Pomvox app's `test_cleanup.py` and `CleanupLogicTests` is a table-driven case in `GuardVectorTests` that asserts the rejection reason. `PackCapabilities.guardRules` reports the guard set identity (`CleanupLogic.rulesVersion`) through the capability query. Guard behaviour is unchanged.
 - Add `CleanupBudgetPolicy`, a length-sized deadline helper moved from the Pomvox app with its tests. It is opt-in: the default request budget is unchanged.
