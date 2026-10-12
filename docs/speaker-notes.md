@@ -13,6 +13,7 @@ dictation path. Nothing here runs unless a host calls it.
 | Diarization contract | `CleanupDiarization` (product `PomvoxDiarization`) | `Diarizing`, `DiarizationRequest`, `SpeakerSegmentation`, `DiarizerPackLoader` |
 | Local diarizer | `Runtime/Diarization` (product `PomvoxDiarizationFluid`, optional) | `FluidDiarizer` over FluidAudio 0.15.5's offline pyannote community-1 pipeline |
 | Cloud diarizer | `PomvoxCleanupCloud` | `CloudDiarizer`: explicit endpoint and credentials, wire protocol in `docs/cloud.md` |
+| Model notes | `PomvoxNotes` + `PomvoxCleanupCloud` | `ModelNotes`, `CloudNotes`: cited notes from an explicit endpoint, validated against the transcript |
 
 The SDK still owns no microphone, STT or UI. The host captures audio, runs its
 speech recognizer with word timings, and obtains speaker segments from a
@@ -128,9 +129,16 @@ nonempty, and a Transcript section that carries every cleaned turn verbatim
 want their own layout read the `Notes` value directly; everything the renderer
 prints is in it.
 
-A model-written summary is not part of this preview. When one is added it will
-be an explicit cloud client, like `CloudCleaner`, whose output must cite turn
-ranges that exist and which falls back to these deterministic notes otherwise.
+A model-written summary is a separate, explicit layer: `CloudNotes` (in
+`PomvoxCleanupCloud`) sends the cleaned transcript to an endpoint the host
+configured with credentials and returns `ModelNotes`, a summary and
+categorized notes in which every entry cites the turns it rests on. The client
+refuses a response in which any note has no citation, cites a turn that does
+not exist, or is not one bounded line. `NotesRenderer.markdown(_:model:)`
+renders the model's notes first, marked "(model)" with their citations, then
+the quoted candidates, marked "(quoted)", then the transcript. If the call
+fails for any reason the host still has the deterministic `Notes`; nothing
+depended on the model. See [cloud](cloud.md#notes-protocol-version-1).
 
 ## Diarization
 
@@ -303,6 +311,6 @@ package tests and the Xcode consumer.
   [cloud](cloud.md#diarization-protocol-version-1). No provider is selected.
 - No speaker naming or enrollment. Labels are opaque; names are the host's.
 - No streaming. Turns are cleaned after the recording, not while it runs.
-- No summarization, no invented text, no reordering. Every byte of output is a
-  cleaned turn or a quote of one.
+- No local summarization. The deterministic notes never invent text; a model's
+  notes come only through the explicit cloud client and carry citations.
 - English and the frozen baseline's limits apply per turn, unchanged.
