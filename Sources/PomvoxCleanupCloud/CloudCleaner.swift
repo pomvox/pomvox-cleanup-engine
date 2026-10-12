@@ -45,6 +45,9 @@ public actor CloudCleaner: Cleaning {
     private var pending: Pending?
     private var closed = false
 
+    /// The remote pack by id and version; the client cannot verify a server's weights.
+    public nonisolated var packIdentity: PackIdentity? { PackIdentity(id: pack.id, version: pack.version, digest: nil) }
+
     private init(endpoint: URL, credentials: any CredentialProvider, pack: RemotePack) {
         self.endpoint = endpoint; self.credentials = credentials; self.pack = pack
         session = CloudTransport.makeSession()

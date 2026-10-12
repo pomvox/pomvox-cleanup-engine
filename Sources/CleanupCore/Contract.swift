@@ -216,6 +216,25 @@ public struct CleanupResult: Codable, Equatable, Sendable {
 
 public protocol Cleaning: Sendable {
     func clean(_ request: CleanupRequest) async throws -> CleanupResult
+    /// The pack this cleaner runs, as its results' provenance names it. Nil when
+    /// the cleaner cannot say; such a cleaner cannot resume a transcript checkpoint.
+    var packIdentity: PackIdentity? { get async }
+}
+
+extension Cleaning {
+    public var packIdentity: PackIdentity? { get async { nil } }
+}
+
+/// Which pack produced a result: what a transcript checkpoint is bound to.
+public struct PackIdentity: Codable, Hashable, Sendable {
+    public let id: String
+    public let version: String
+    /// The manifest digest, when the cleaner knows it (local packs). A remote pack
+    /// is identified by id and version only.
+    public let digest: String?
+    public init(id: String, version: String, digest: String?) {
+        self.id = id; self.version = version; self.digest = digest
+    }
 }
 
 extension Cleaning {

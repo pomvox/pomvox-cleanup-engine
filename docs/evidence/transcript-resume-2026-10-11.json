@@ -1,0 +1,494 @@
+{
+  "batch" : [
+    {
+      "inferenceMS" : 343.48392486572266,
+      "inputBytes" : 44,
+      "outputBytes" : 29,
+      "status" : "cleaned",
+      "totalMS" : 493.85887500000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 237.66803741455078,
+      "inputBytes" : 58,
+      "outputBytes" : 35,
+      "status" : "cleaned",
+      "totalMS" : 384.37841700000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 213.04011344909668,
+      "inputBytes" : 65,
+      "outputBytes" : 18,
+      "status" : "cleaned",
+      "totalMS" : 364.59504099999998,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 207.28600025177002,
+      "inputBytes" : 71,
+      "outputBytes" : 44,
+      "status" : "cleaned",
+      "totalMS" : 357.17945800000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 782.57906436920166,
+      "inputBytes" : 87,
+      "outputBytes" : 54,
+      "status" : "cleaned",
+      "totalMS" : 1038.9739589999999,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 332.55302906036377,
+      "inputBytes" : 89,
+      "outputBytes" : 77,
+      "status" : "cleaned",
+      "totalMS" : 587.63162499999999,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 280.47096729278564,
+      "inputBytes" : 52,
+      "outputBytes" : 44,
+      "status" : "cleaned",
+      "totalMS" : 428.32383299999998,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 951.13790035247803,
+      "inputBytes" : 175,
+      "outputBytes" : 158,
+      "status" : "cleaned",
+      "totalMS" : 1210.1925000000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 420.96400260925293,
+      "inputBytes" : 76,
+      "outputBytes" : 66,
+      "status" : "cleaned",
+      "totalMS" : 569.79916600000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 258.00406932830811,
+      "inputBytes" : 73,
+      "outputBytes" : 73,
+      "status" : "unchanged",
+      "totalMS" : 409.38912499999998,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 918.62404346466064,
+      "inputBytes" : 73,
+      "outputBytes" : 57,
+      "status" : "cleaned",
+      "totalMS" : 1068.38525,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 381.25407695770264,
+      "inputBytes" : 64,
+      "outputBytes" : 50,
+      "status" : "cleaned",
+      "totalMS" : 531.25395900000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 152.12202072143555,
+      "inputBytes" : 8,
+      "outputBytes" : 9,
+      "status" : "cleaned",
+      "totalMS" : 290.784291,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 1101.017951965332,
+      "inputBytes" : 160,
+      "outputBytes" : 149,
+      "status" : "cleaned",
+      "totalMS" : 1360.2770419999999,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 473.99592399597168,
+      "inputBytes" : 141,
+      "outputBytes" : 143,
+      "status" : "cleaned",
+      "totalMS" : 616.85158300000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 448.45199584960938,
+      "inputBytes" : 70,
+      "outputBytes" : 71,
+      "status" : "cleaned",
+      "totalMS" : 597.89729199999999,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 245.19705772399902,
+      "inputBytes" : 69,
+      "outputBytes" : 50,
+      "status" : "cleaned",
+      "totalMS" : 393.863833,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 534.21497344970703,
+      "inputBytes" : 59,
+      "outputBytes" : 60,
+      "status" : "cleaned",
+      "totalMS" : 684.34191699999997,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 286.9030237197876,
+      "inputBytes" : 73,
+      "outputBytes" : 74,
+      "status" : "cleaned",
+      "totalMS" : 435.10641700000002,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 304.24296855926514,
+      "inputBytes" : 53,
+      "outputBytes" : 54,
+      "status" : "cleaned",
+      "totalMS" : 453.46104200000002,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 212.64398097991943,
+      "inputBytes" : 49,
+      "outputBytes" : 50,
+      "status" : "cleaned",
+      "totalMS" : 360.84845799999999,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 393.81492137908936,
+      "inputBytes" : 74,
+      "outputBytes" : 75,
+      "status" : "cleaned",
+      "totalMS" : 544.085375,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 232.83791542053223,
+      "inputBytes" : 69,
+      "outputBytes" : 70,
+      "status" : "cleaned",
+      "totalMS" : 381.075917,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 996.84000015258789,
+      "inputBytes" : 86,
+      "outputBytes" : 60,
+      "status" : "cleaned",
+      "totalMS" : 1146.673959,
+      "warnings" : [
+
+      ]
+    }
+  ],
+  "batchMS" : 14713.945917000001,
+  "cut" : 9,
+  "firstPartMS" : 5389.7803750000003,
+  "interruptedThenResumed" : [
+    {
+      "inferenceMS" : 279.16204929351807,
+      "inputBytes" : 44,
+      "outputBytes" : 29,
+      "status" : "cleaned",
+      "totalMS" : 428.529042,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 235.03494262695312,
+      "inputBytes" : 58,
+      "outputBytes" : 35,
+      "status" : "cleaned",
+      "totalMS" : 383.15258299999999,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 204.63693141937256,
+      "inputBytes" : 65,
+      "outputBytes" : 18,
+      "status" : "cleaned",
+      "totalMS" : 357.02600000000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 204.92005348205566,
+      "inputBytes" : 71,
+      "outputBytes" : 44,
+      "status" : "cleaned",
+      "totalMS" : 356.50270899999998,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 802.28495597839355,
+      "inputBytes" : 87,
+      "outputBytes" : 54,
+      "status" : "cleaned",
+      "totalMS" : 1060.4386669999999,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 338.92202377319336,
+      "inputBytes" : 89,
+      "outputBytes" : 77,
+      "status" : "cleaned",
+      "totalMS" : 594.61654099999998,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 286.33999824523926,
+      "inputBytes" : 52,
+      "outputBytes" : 44,
+      "status" : "cleaned",
+      "totalMS" : 434.39441699999998,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 941.59698486328125,
+      "inputBytes" : 175,
+      "outputBytes" : 158,
+      "status" : "cleaned",
+      "totalMS" : 1199.9751670000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 425.45700073242188,
+      "inputBytes" : 76,
+      "outputBytes" : 66,
+      "status" : "cleaned",
+      "totalMS" : 574.08249999999998,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 259.21797752380371,
+      "inputBytes" : 73,
+      "outputBytes" : 73,
+      "status" : "unchanged",
+      "totalMS" : 409.03820899999999,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 879.31704521179199,
+      "inputBytes" : 73,
+      "outputBytes" : 57,
+      "status" : "cleaned",
+      "totalMS" : 1028.761375,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 376.97207927703857,
+      "inputBytes" : 64,
+      "outputBytes" : 50,
+      "status" : "cleaned",
+      "totalMS" : 526.36770899999999,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 146.22998237609863,
+      "inputBytes" : 8,
+      "outputBytes" : 9,
+      "status" : "cleaned",
+      "totalMS" : 284.11695900000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 1093.5859680175781,
+      "inputBytes" : 160,
+      "outputBytes" : 149,
+      "status" : "cleaned",
+      "totalMS" : 1352.9195,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 467.0790433883667,
+      "inputBytes" : 141,
+      "outputBytes" : 143,
+      "status" : "cleaned",
+      "totalMS" : 613.50416600000005,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 453.15194129943848,
+      "inputBytes" : 70,
+      "outputBytes" : 71,
+      "status" : "cleaned",
+      "totalMS" : 604.39412500000003,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 244.26400661468506,
+      "inputBytes" : 69,
+      "outputBytes" : 50,
+      "status" : "cleaned",
+      "totalMS" : 394.38287500000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 556.18000030517578,
+      "inputBytes" : 59,
+      "outputBytes" : 60,
+      "status" : "cleaned",
+      "totalMS" : 705.64475000000004,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 293.95890235900879,
+      "inputBytes" : 73,
+      "outputBytes" : 74,
+      "status" : "cleaned",
+      "totalMS" : 444.463459,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 306.32996559143066,
+      "inputBytes" : 53,
+      "outputBytes" : 54,
+      "status" : "cleaned",
+      "totalMS" : 457.08012500000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 217.23294258117676,
+      "inputBytes" : 49,
+      "outputBytes" : 50,
+      "status" : "cleaned",
+      "totalMS" : 366.38062500000001,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 421.39601707458496,
+      "inputBytes" : 74,
+      "outputBytes" : 75,
+      "status" : "cleaned",
+      "totalMS" : 572.63466700000004,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 233.27493667602539,
+      "inputBytes" : 69,
+      "outputBytes" : 70,
+      "status" : "cleaned",
+      "totalMS" : 380.95112499999999,
+      "warnings" : [
+
+      ]
+    },
+    {
+      "inferenceMS" : 976.10902786254883,
+      "inputBytes" : 86,
+      "outputBytes" : 60,
+      "status" : "cleaned",
+      "totalMS" : 1126.0237500000001,
+      "warnings" : [
+
+      ]
+    }
+  ],
+  "memoryBytes" : 17179869184,
+  "os" : "Version 15.7.4 (Build 24G517)",
+  "pack" : "simplewords-v3 0.1.0-preview",
+  "resumedPartMS" : 9269.4194169999992,
+  "turns" : 24
+}
