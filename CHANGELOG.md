@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Publish the diarization runtime as its own remote package, `pomvox/pomvox-diarization-fluid`, generated from `Runtime/Diarization` by the new `scripts/export-diarization-release.py` (#25). Apps no longer need a local checkout for `PomvoxDiarizationFluid`. SDK CI gains a `diarization` job that runs the runtime's tests without a model (the real-pack tests skip and say so) and verifies the export; the release procedure covers the second runtime.
+
 ## 0.2.0-beta.1 — 2026-10-11
 
 - Declare iOS 17 in the root package, `Runtime/MLX` and `Runtime/Diarization`. Without it an iOS 17 app could not link the runtimes (mlx-swift-lm, swift-tokenizers and FluidAudio require iOS 17, while an undeclared package defaults to iOS 12). Add `Examples/iOSConsumer`, an iPhone app that links all four libraries with no deployment-target override. Builds only: nothing is validated on a device.

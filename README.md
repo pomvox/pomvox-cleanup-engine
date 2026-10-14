@@ -122,7 +122,7 @@ let cleaned = try await cleaner.clean(transcript, options: TranscriptCleanOption
 let markdown = NotesRenderer.markdown(Notes.extract(from: cleaned))
 ```
 
-A turn the model never sees keeps its exact bytes and says why in a warning. Diarization itself needs audio and a model: the root package carries only the `PomvoxDiarization` contract and a verified diarizer pack format, and the optional `Runtime/Diarization` package (`PomvoxDiarizationFluid`) runs FluidAudio 0.15.5's offline pyannote community-1 pipeline on the Neural Engine from a pinned, hash-checked pack (`packs/pyannote-community1-coreml`), never downloading. See [speaker transcripts and notes](docs/speaker-notes.md).
+A turn the model never sees keeps its exact bytes and says why in a warning. Diarization itself needs audio and a model: the root package carries only the `PomvoxDiarization` contract and a verified diarizer pack format, and the optional `Runtime/Diarization` package (`PomvoxDiarizationFluid`, published as [`pomvox-diarization-fluid`](https://github.com/pomvox/pomvox-diarization-fluid)) runs FluidAudio 0.15.5's offline pyannote community-1 pipeline on the Neural Engine from a pinned, hash-checked pack (`packs/pyannote-community1-coreml`), never downloading. See [speaker transcripts and notes](docs/speaker-notes.md).
 
 ### Try it from a browser
 

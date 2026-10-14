@@ -1,0 +1,63 @@
+name: Diarization Package CI
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: diarization-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  package:
+    name: Tests, iOS build and remote consumer
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Verify release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: test "$RELEASE_TAG" = "v$(cat VERSION)"
+      - name: Test with the tagged public core dependency (no model download; gated tests skip)
+        run: swift test --scratch-path "$RUNNER_TEMP/macos"
+      - name: Cross-compile the package and its tests for arm64-apple-ios17.0
+        run: >-
+          swift build --scratch-path "$RUNNER_TEMP/ios" --triple arm64-apple-ios17.0
+          --sdk "$(xcrun --sdk iphoneos --show-sdk-path)" --build-tests
+      - name: Consume the package remotely at the exact pushed commit
+        run: |
+          mkdir -p "$RUNNER_TEMP/consumer/Sources/Consumer"
+          cd "$RUNNER_TEMP/consumer"
+          cat > Package.swift <<SWIFT
+          // swift-tools-version: 6.0
+          import PackageDescription
+          let package = Package(
+              name: "Consumer",
+              platforms: [.macOS(.v14), .iOS(.v17)],
+              dependencies: [.package(url: "https://github.com/pomvox/pomvox-diarization-fluid.git", revision: "$GITHUB_SHA")],
+              targets: [.executableTarget(name: "Consumer", dependencies: [
+                  .product(name: "PomvoxDiarizationFluid", package: "pomvox-diarization-fluid")])]
+          )
+          SWIFT
+          printf 'import PomvoxDiarizationFluid\nprint(FluidDiarizer.runtimeName)\n' > Sources/Consumer/main.swift
+          swift build --scratch-path "$RUNNER_TEMP/consumer-build"
+      - name: Verify resolved package, core and FluidAudio identities
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          from pathlib import Path
+          pins = json.loads(Path(os.environ['RUNNER_TEMP'], 'consumer/Package.resolved').read_text())['pins']
+          pins = {p['identity']: p for p in pins}
+          assert pins['pomvox-diarization-fluid']['state']['revision'] == os.environ['GITHUB_SHA']
+          assert pins['pomvox-cleanup-engine']['state']['version'] == Path('VERSION').read_text().strip()
+          assert pins['fluidaudio']['state']['version'] == '0.15.5'
+          assert all(p['kind'] == 'remoteSourceControl' for p in pins.values())
+          PYTHON
