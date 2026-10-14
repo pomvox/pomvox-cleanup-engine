@@ -28,8 +28,10 @@ jobs:
         run: test "$RELEASE_TAG" = "v$(cat VERSION)"
       - name: Test all core configurations
         run: python3 scripts/check.py --sanitizers --repeat 20 --build-dir "$RUNNER_TEMP/checks"
-      - name: Verify standalone package export
-        run: python3 scripts/export-mlx-release.py "$RUNNER_TEMP/mlx-release"
+      - name: Verify standalone package exports
+        run: |
+          python3 scripts/export-mlx-release.py "$RUNNER_TEMP/mlx-release"
+          python3 scripts/export-diarization-release.py "$RUNNER_TEMP/diarization-release"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -55,6 +57,18 @@ jobs:
           xcodebuild -project Examples/Consumer/CleanupConsumer.xcodeproj
           -scheme Consumer -configuration Debug -derivedDataPath "$RUNNER_TEMP/consumer"
           -destination 'platform=macOS,arch=arm64' build-for-testing
+  diarization:
+    name: Diarization runtime tests (no model download)
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build and test Runtime/Diarization (gated real-pack tests skip and say so)
+        run: swift test --package-path Runtime/Diarization --scratch-path "$RUNNER_TEMP/diarization"
   ios:
     name: iOS 17 build (packages and app consumer, no device)
     runs-on: macos-15

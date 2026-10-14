@@ -11,7 +11,7 @@ dictation path. Nothing here runs unless a host calls it.
 | Transcript cleaning | `PomvoxCleanup` | `Cleaning.clean(_ transcript:options:)`, `TranscriptCleanOptions` |
 | Notes | `PomvoxNotes` (implementation in `CleanupNotes`) | `Notes.extract`, `NoteItem`, `Participant`, `NoteHeuristics`, `NotesRenderer.markdown` |
 | Diarization contract | `PomvoxDiarization` (implementation in `CleanupDiarization`) | `Diarizing`, `DiarizationRequest`, `SpeakerSegmentation`, `DiarizerPackLoader` |
-| Local diarizer | `Runtime/Diarization` (product `PomvoxDiarizationFluid`, optional) | `FluidDiarizer` over FluidAudio 0.15.5's offline pyannote community-1 pipeline |
+| Local diarizer | `Runtime/Diarization`, published as [`pomvox-diarization-fluid`](https://github.com/pomvox/pomvox-diarization-fluid) (product `PomvoxDiarizationFluid`, optional) | `FluidDiarizer` over FluidAudio 0.15.5's offline pyannote community-1 pipeline |
 | Cloud diarizer | `PomvoxCleanupCloud` | `CloudDiarizer`: explicit endpoint and credentials, wire protocol in `docs/cloud.md` |
 | Model notes | `PomvoxNotes` + `PomvoxCleanupCloud` | `ModelNotes`, `CloudNotes`: cited notes from an explicit endpoint, validated against the transcript |
 
@@ -270,7 +270,10 @@ the contract (`PomvoxDiarization`, no third-party dependencies):
 ### The local runtime
 
 `Runtime/Diarization` is a separate Swift package, like `Runtime/MLX`, so
-contract users do not acquire Core ML model dependencies. It depends on
+contract users do not acquire Core ML model dependencies. Apps consume it
+remotely from `https://github.com/pomvox/pomvox-diarization-fluid.git` at the
+exact SDK version (product `PomvoxDiarizationFluid`); that repository is
+generated from `Runtime/Diarization` by `scripts/export-diarization-release.py`. It depends on
 FluidAudio at exactly `0.15.5` (inside the range the Pomvox app allows) and
 runs that release's **offline** pipeline: pyannote community-1 segmentation,
 WeSpeaker embeddings, VBx clustering, on the Neural Engine. The artifacts are

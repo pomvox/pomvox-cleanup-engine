@@ -1,8 +1,9 @@
 # Release procedure
 
 The root SDK remains independent of MLX. The development runtime in `Runtime/MLX`
-is exported into the public `pomvox/pomvox-cleanup-mlx` repository for distribution.
-Do not maintain independent runtime implementations in the two repositories.
+is exported into the public `pomvox/pomvox-cleanup-mlx` repository for distribution,
+and `Runtime/Diarization` into `pomvox/pomvox-diarization-fluid`. Do not maintain
+independent runtime implementations in the runtime repositories.
 
 1. Update `VERSION`, changelog, release notes and install examples consistently. Use
    semantic prerelease versions until the stable gates in `docs/testing.md` are met.
@@ -23,8 +24,14 @@ Do not maintain independent runtime implementations in the two repositories.
 6. Build a clean external consumer with the remote runtime URL and exact release
    version, with no local package overrides. It must resolve both public packages
    and package Metal resources. This proves package installation, not gated model acquisition.
-7. Verify the tags match `VERSION` and the validated commits; publish both GitHub
-   releases using the reviewed notes. Mark beta versions as prereleases. Attach
+7. Repeat steps 4–6 for the diarization runtime:
+   `python3 scripts/export-diarization-release.py /absolute/path/to/new-export`,
+   committed to `pomvox/pomvox-diarization-fluid` with its own signed `v<VERSION>` tag
+   after its CI passes. Its CI runs the package tests (gated real-pack tests skip),
+   cross-compiles for iOS 17 and consumes the package remotely at the pushed commit.
+   Run the real-pack diarizer tests locally with `POMVOX_TEST_DIARIZER_PACK` first.
+8. Verify the tags match `VERSION` and the validated commits; publish the GitHub
+   releases (core and each runtime) using the reviewed notes. Mark beta versions as prereleases. Attach
    checksums/evidence when applicable. Do not rewrite published tags; issue a new version.
 
 Actions are pinned by commit and use read-only repository permissions. Publishing
