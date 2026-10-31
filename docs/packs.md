@@ -32,6 +32,10 @@ Unknown or missing keys at either level fail validation. A pack declaring a styl
 
 Hosts read the answer as `ValidatedPack.capabilities` before open and `Cleaner.capabilities` after. A schema 1 pack reports `PackCapabilities.frozenBaseline`: no styles, no speculative switch, no auxiliary generation, memory not measured, and the request vocabulary limits. `simplewords-v3` is schema 1; its manifest is unchanged.
 
+### Auxiliary generation: declared unsupported (#3)
+
+`auxiliaryGeneration` is the flag behind `Cleaner.suggestVariants(for:limit:deadline:)`, the dictionary editor's spelling-variant chips. Absent (schema 1) or `false` means unsupported, and the call returns `[]` without a generation; a host hides the chips. **Decision (2026-10-31, issue #3 option 1): `simplewords-v3` ships no variant prompt and stays schema 1.** The fine-tune was trained on the frozen cleanup prompt only; asking it for mishearings is off-distribution, and the app's hand-built chat for that purpose was the second resident model this API removes. A pack that does carry its own variant prompt needs a manifest field for it, the MLX runtime conforming to `AuxiliaryGenerating`, and installed-artifact evidence before the validator accepts `auxiliaryGeneration: true` (option 2 in the issue, not done).
+
 ## Diarizer packs
 
 A diarizer pack is a second, independent pack format for the optional

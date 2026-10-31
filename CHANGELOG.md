@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add `Cleaner.suggestVariants(for:limit:deadline:)`, the auxiliary generation entry point for the dictionary editor's spelling-variant chips (#3, gap 12). It runs on the same one-generation worker as `clean` but never takes a queue slot, never loads a model and never throws: `[]` on any failure. Support is the pack's `auxiliaryGeneration` capability (absent or `false` is unsupported, so a host hides the chips); `simplewords-v3` declares none and is unchanged, so the call returns `[]` on every openable pack today. The app's `parseVariantLines` moves here as `VariantParser` (differentially tested, including digit-leading variants). Runtimes opt in through the new `AuxiliaryGenerating` protocol; the MLX runtime does not yet.
+
 - Publish the diarization runtime as its own remote package, `pomvox/pomvox-diarization-fluid`, generated from `Runtime/Diarization` by the new `scripts/export-diarization-release.py` (#25). Apps no longer need a local checkout for `PomvoxDiarizationFluid`. SDK CI gains a `diarization` job that runs the runtime's tests without a model (the real-pack tests skip and say so) and verifies the export; the release procedure covers the second runtime.
 
 ## 0.2.0-beta.1 — 2026-10-11
