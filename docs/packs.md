@@ -32,6 +32,30 @@ Unknown or missing keys at either level fail validation. A pack declaring a styl
 
 Hosts read the answer as `ValidatedPack.capabilities` before open and `Cleaner.capabilities` after. A schema 1 pack reports `PackCapabilities.frozenBaseline`: no styles, no speculative switch, no auxiliary generation, memory not measured, and the request vocabulary limits. `simplewords-v3` is schema 1; its manifest is unchanged.
 
+### Vocabulary cost on the reference Mac (#14)
+
+Measured 2026-10-31 on Apple M1, 16 GiB, macOS 15.7.4, Xcode 26.3 (17C529), Debug build, `simplewords-v3` (manifest `b18de514…`, revision `b1f7ac82…`), mlx-swift-lm 3.31.4 / MLX 0.31.4, speculative decoding. One 87-byte fixture (the consumer benchmark's numbered list), nine requests per dictionary, 72 requests in all, every one `cleaned`. Terms are synthetic pseudo-names of about 9 bytes (4.6 tokens each); `64 × 32 B` is 64 terms of exactly 32 bytes, the current limits' worst case of 2,048 bytes. Networking was not denied in this run. Method, per-request numbers and limitations: [evidence](evidence/vocabulary-prefill-2026-10-31.json).
+
+| Terms | Term bytes | Prompt tokens, uncached | Cached prefill ms, median of 5 (max) | First request after the dictionary changed, ms | Uncached prefill ms, median of 3 (max) | Cached decode ms / tokens, median |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | 281 | 148 (149) | 1,848 | 1,065 (1,074) | 989 / 18 |
+| 16 | 119 | 363 | 148 (149) | 2,077 | 1,410 (1,466) | 994 / 18 |
+| 64 | 544 | 574 | 149 (150) | 2,732 | 2,115 (2,124) | 1,008 / 18 |
+| 64 × 32 B | 2,048 | 1,064 | 151 (152) | 4,341 | 3,979 (4,002) | 1,247 / 22 |
+| 128 | 1,115 | 845 | 151 (153) | 3,415 | 3,177 (3,211) | 1,024 / 18 |
+| 256 | 2,245 | 1,390 | 153 (155) | 5,125 | 5,191 (5,276) | 1,260 / 22 |
+| 512 | 4,660 | 2,509 | 156 (157) | 8,763 | 9,471 (9,598) | 1,287 / 22 |
+| 1,024 | 9,801 | 4,878 | 162 (168) | 15,627 | 21,749 (25,406) | 1,324 / 22 |
+
+What the table says (arithmetic on the rows above, same run):
+
+- With the prefix cache, per-request prefill does not depend on dictionary size: 148 ms at 0 terms, 162 ms at 1,024, because the suffix the model reads is 25 tokens either way. Decode per token rose from 55 ms (989 / 18) to 60 ms (1,324 / 22), about 10 %, over the same range; the wider steady-state wall time (1,138 → 1,499 ms) is mostly the output being 22 tokens instead of 18 for some dictionaries.
+- The cost that scales is the one-off prefix rebuild on the first request after the dictionary changes: 0.7 s above steady state at 0 terms, 1.6 s at 64, 2.9 s at 64 × 32 B, 3.7 s at 256, 7.3 s at 512, 14.1 s at 1,024, which is 2.5–2.9 ms per prefix token or roughly 12 ms per 9-byte term. The uncached path (prefix disabled, or a cache miss) pays 3.7–4.5 ms per prompt token on every request.
+- The rebuild is request work inside that request's deadline ([contract](contract.md#cache-isolation)), and the default budget for short text is 5 s. The 256-term rebuild request took 5.1 s and the 512-term one 8.8 s, so a dictionary of that size would time out and fall back on the first dictation after an edit unless the host rebuilds ahead: open with `.mlx(vocabulary:)`, or send one request right after the dictionary is saved. The current worst case (4.3 s) fits.
+- Not measured: resident memory with the larger prefix, energy, Release build, concurrent STT load, output quality (the output changed with the dictionary; there are no labels), and how real dictionary words tokenize compared with these pseudo-names.
+
+The limits are unchanged by this measurement. The engine does not trim: a request over the request limits throws `invalidRequest`, one over the pack's declared limits throws `incompatible`, and nothing is dropped silently. The host selects a stable, ordered subset and passes it on **every** request, so the active set is exactly what the host passed; the app keeps the user's order, drops from the end, and reports the omitted count without logging terms ([integration prompt](pomvox-integration-prompt.md), step 3). Raising or pack-declaring the limits (option 2 of the issue, which changes prompt bytes and needs differential evidence) and engine-side trimming with a reported dropped count (option 3) are follow-ups that start from this table.
+
 ### Auxiliary generation: declared unsupported (#3)
 
 `auxiliaryGeneration` is the flag behind `Cleaner.suggestVariants(for:limit:deadline:)`, the dictionary editor's spelling-variant chips. Absent (schema 1) or `false` means unsupported, and the call returns `[]` without a generation; a host hides the chips. **Decision (2026-10-31, issue #3 option 1): `simplewords-v3` ships no variant prompt and stays schema 1.** The fine-tune was trained on the frozen cleanup prompt only; asking it for mishearings is off-distribution, and the app's hand-built chat for that purpose was the second resident model this API removes. A pack that does carry its own variant prompt needs a manifest field for it, the MLX runtime conforming to `AuxiliaryGenerating`, and installed-artifact evidence before the validator accepts `auxiliaryGeneration: true` (option 2 in the issue, not done).
