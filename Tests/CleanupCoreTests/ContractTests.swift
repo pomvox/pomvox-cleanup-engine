@@ -12,8 +12,9 @@ private actor ControlledRuntime: CleanupRuntime {
         // Deliberately ignores cancellation; proves the caller doesn't wait for a worker.
         return await withCheckedContinuation { continuation = $0 }
     }
-    func waitStarted() async {
-        if calls > 0 { return }
+    /// Returns once `generate` has been entered `expected` times; one waiter at a time.
+    func waitStarted(calls expected: Int = 1) async {
+        if calls >= expected { return }
         await withCheckedContinuation { startWaiter = $0 }
     }
     func release(_ candidate: String = "Hello.") {
@@ -92,20 +93,35 @@ final class ContractTests: XCTestCase, @unchecked Sendable {
         // enough that a slow sanitizer runner never expires it first (it did at 2 s on CI).
         let first = Task { try await session.clean(CleanupRequest("hello", deadline: .seconds(30))) }
         await runtime.waitStarted()
-        let second = Task { try await session.clean(CleanupRequest("queued", deadline: .milliseconds(150))) }
-        try await Task.sleep(for: .milliseconds(20))
-        let excess = try await session.clean("excess")
-        XCTAssertEqual(excess.status, .fallback(.busy))
-        let emptyWhileBusy = try await session.clean("")
-        XCTAssertEqual(emptyWhileBusy.status, .unchanged)
-        let queued = try await second.value
-        XCTAssertEqual(queued.status, .fallback(.timedOut))
-        XCTAssertGreaterThan(queued.timings.queueMS, 100)
-        await runtime.release()
-        let accepted = try await first.value
-        XCTAssertEqual(accepted.status, .cleaned)
+        // Queue limit. Two requests race for the one slot. Which one the actor admits is a
+        // scheduling matter (a fixed sleep guessed it under Thread Sanitizer and lost, #48), so
+        // the test does not name the winner: the first to return is the one the full queue
+        // turned away, which proves the other was queued. Both deadlines are safety bounds, like
+        // `first`'s; the test drives their lifetimes itself.
+        let admitted = try await withThrowingTaskGroup(of: CleanupResult.self) { group in
+            for _ in 0..<2 {
+                group.addTask { try await session.clean(CleanupRequest("hello", deadline: .seconds(30))) }
+            }
+            let rejected = try await group.next()
+            XCTAssertEqual(rejected?.status, .fallback(.busy))
+            let emptyWhileBusy = try await session.clean("")
+            XCTAssertEqual(emptyWhileBusy.status, .unchanged)
+            await runtime.release()
+            let accepted = try await first.value
+            XCTAssertEqual(accepted.status, .cleaned)
+            // Queue deadline. The admitted request now holds the worker and the slot is free, so
+            // this request is queued, not rejected, and nothing else competes for the slot; it
+            // can only leave the queue by expiring there.
+            await runtime.waitStarted(calls: 2)
+            let queued = try await session.clean(CleanupRequest("queued", deadline: .milliseconds(150)))
+            XCTAssertEqual(queued.status, .fallback(.timedOut))
+            XCTAssertGreaterThan(queued.timings.queueMS, 100)
+            await runtime.release()
+            return try await group.next()
+        }
+        XCTAssertEqual(admitted?.status, .cleaned)
         let calls = await runtime.calls
-        XCTAssertEqual(calls, 1)
+        XCTAssertEqual(calls, 2)
         await session.close()
     }
 
