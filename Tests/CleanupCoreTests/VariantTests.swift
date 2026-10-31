@@ -2,21 +2,41 @@ import XCTest
 @testable import CleanupCore
 
 /// Cleans and variants on one worker. Variant output is scripted; cleanups echo.
+/// Ungated, every generation holds the "device" for `delay`. Gated, it holds it until the
+/// test calls `release()`, so "the worker is busy" is a state the test establishes, never a
+/// guess about how far a sleep got (#54: the guess lost once on a Release runner).
 private actor VariantRuntime: CleanupRuntime, AuxiliaryGenerating {
     var active = 0, maximumActive = 0, cleans = 0, variants = 0
     let output: RuntimeOutput
     let delay: Duration
     let failing: Bool
+    let gated: Bool
+    private var gate: CheckedContinuation<Void, Never>?
+    private var startWaiter: CheckedContinuation<Void, Never>?
     init(output: RuntimeOutput = RuntimeOutput(candidate: "- pom box\n2. palm vox\nPomvox\n"),
-         delay: Duration = .milliseconds(2), failing: Bool = false) {
-        self.output = output; self.delay = delay; self.failing = failing
+         delay: Duration = .milliseconds(2), failing: Bool = false, gated: Bool = false) {
+        self.output = output; self.delay = delay; self.failing = failing; self.gated = gated
     }
-    /// Holds the "device" for the whole delay even when cancelled, like a running kernel.
+    /// Holds the "device" for the whole delay (or until released) even when cancelled, like a running kernel.
     private func occupy() async throws {
         active += 1; maximumActive = max(maximumActive, active)
         defer { active -= 1 }
-        let delay = self.delay
-        await Task.detached { try? await Task.sleep(for: delay) }.value
+        startWaiter?.resume(); startWaiter = nil
+        if gated {
+            await withCheckedContinuation { gate = $0 }
+        } else {
+            let delay = self.delay
+            await Task.detached { try? await Task.sleep(for: delay) }.value
+        }
+    }
+    /// Returns once `expected` generations (cleanups and variants together) have begun; one waiter at a time.
+    func waitStarted(calls expected: Int) async {
+        if cleans + variants >= expected { return }
+        await withCheckedContinuation { startWaiter = $0 }
+    }
+    /// Lets the gated generation finish. Harmless when nothing is held.
+    func release() {
+        gate?.resume(); gate = nil
     }
     func generate(_ request: CleanupRequest, deadline: ContinuousClock.Instant) async throws -> RuntimeOutput {
         cleans += 1; try await occupy(); return RuntimeOutput(candidate: request.text)
@@ -73,26 +93,46 @@ final class VariantTests: XCTestCase, @unchecked Sendable {
     // MARK: - One worker for both
 
     func testVariantsRunOnTheWorkerAndNeverQueueBehindOrAheadOfACleanup() async throws {
-        let runtime = VariantRuntime(delay: .milliseconds(50))
-        let session = try CleanupSession(runtime: runtime, provenance: provenance)
+        // The runtime holds every generation until the test releases it, so each "worker is
+        // busy" step below is sequenced on the runtime's observed calls, not on a sleep (#54,
+        // the same approach as #48). Every deadline is the default; the test drives lifetimes.
+        let runtime = VariantRuntime(gated: true)
+        let session = try CleanupSession(runtime: runtime, provenance: provenance, queueCapacity: 1)
         // Idle worker: generated and parsed, with the term's echo dropped.
-        let idle = await session.suggestVariants(VariantRequest(term: "Pomvox"))
+        let idling = Task { await session.suggestVariants(VariantRequest(term: "Pomvox")) }
+        await runtime.waitStarted(calls: 1)
+        await runtime.release()
+        let idle = await idling.value
         XCTAssertEqual(idle, ["pom box", "palm vox"])
         // Cleanup active: variants answer [] at once without a generation; the cleanup is unaffected.
         let cleaning = Task { try await session.clean("hello") }
-        try await Task.sleep(for: .milliseconds(10))
+        await runtime.waitStarted(calls: 2)
         let busy = await session.suggestVariants(VariantRequest(term: "Pomvox"))
         XCTAssertEqual(busy, [])
+        let stillCleaning = await session.availability
+        XCTAssertEqual(stillCleaning, .working)
+        await runtime.release()
         let cleaned = try await cleaning.value
         XCTAssertEqual(cleaned.status, .unchanged)
         // Variants active: a cleanup queues behind them and still runs, one generation at a time.
+        // Two cleanups race for the one queue slot; which one the actor admits is a scheduling
+        // matter, so the test does not name the winner: the first to return is the one the full
+        // queue turned away, which proves the other was queued behind the variants.
         let suggesting = Task { await session.suggestVariants(VariantRequest(term: "Pomvox")) }
-        try await Task.sleep(for: .milliseconds(10))
-        let queued = try await session.clean("hello")
-        XCTAssertEqual(queued.status, .unchanged)
-        XCTAssertGreaterThan(queued.timings.queueMS, 0)
-        let suggested = await suggesting.value
-        XCTAssertEqual(suggested, ["pom box", "palm vox"])
+        await runtime.waitStarted(calls: 3)
+        let queued = try await withThrowingTaskGroup(of: CleanupResult.self) { group in
+            for _ in 0..<2 { group.addTask { try await session.clean("hello") } }
+            let rejected = try await group.next()
+            XCTAssertEqual(rejected?.status, .fallback(.busy))
+            await runtime.release()
+            let suggested = await suggesting.value
+            XCTAssertEqual(suggested, ["pom box", "palm vox"])
+            await runtime.waitStarted(calls: 4)
+            await runtime.release()
+            return try await group.next()
+        }
+        XCTAssertEqual(queued?.status, .unchanged)
+        XCTAssertGreaterThan(queued?.timings.queueMS ?? 0, 0)
         let counts = await runtime.counts()
         XCTAssertEqual(counts.cleans, 2); XCTAssertEqual(counts.variants, 2); XCTAssertEqual(counts.maximumActive, 1)
         await session.close()
