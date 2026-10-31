@@ -2,12 +2,15 @@
 
 ## Unreleased
 
+## 0.2.0-beta.2 — 2026-10-31
+
 - Measure vocabulary cost against dictionary size on the reference M1 for `simplewords-v3` (#14, gap 6) and publish the table in `docs/packs.md` with the raw runs in `docs/evidence/vocabulary-prefill-2026-10-31.json`. With the prefix cache, per-request prefill is flat from 0 to 1,024 terms (148 → 162 ms, Debug build); the cost that scales is the prefix rebuild on the first request after a dictionary change (1.8 s at 0 terms, 2.7 s at 64, 8.8 s at 512, 15.6 s at 1,024) and the uncached path. Limits and behaviour are unchanged; the guide now also states that the engine never trims and how the host's subset becomes the active set.
 
 - Add `Cleaner.suggestVariants(for:limit:deadline:)`, the auxiliary generation entry point for the dictionary editor's spelling-variant chips (#3, gap 12). It runs on the same one-generation worker as `clean` but never takes a queue slot, never loads a model and never throws: `[]` on any failure. Support is the pack's `auxiliaryGeneration` capability (absent or `false` is unsupported, so a host hides the chips); `simplewords-v3` declares none and is unchanged, so the call returns `[]` on every openable pack today. The app's `parseVariantLines` moves here as `VariantParser` (differentially tested, including digit-leading variants). Runtimes opt in through the new `AuxiliaryGenerating` protocol; the MLX runtime does not yet.
 
 - Publish the diarization runtime as its own remote package, `pomvox/pomvox-diarization-fluid`, generated from `Runtime/Diarization` by the new `scripts/export-diarization-release.py` (#25). Apps no longer need a local checkout for `PomvoxDiarizationFluid`. SDK CI gains a `diarization` job that runs the runtime's tests without a model (the real-pack tests skip and say so) and verifies the export; the release procedure covers the second runtime.
 - Add `PackInstaller.installed(at:)` and `PackInstaller.remove(_:)` (#12). Listing returns each pack directory under a parent with its manifest id and version, install date, `allocatedBytes` (allocated blocks, what `du` reports; an APFS clone counts in full) and `privateBytes` (what removing it frees now, via `ATTR_CMNEXT_PRIVATESIZE`; near zero while the pack still shares blocks with its source snapshot). Removal refuses, with `CleanupError.unavailable`, while a `Cleaner` in the same process holds the pack, from before validation until its runtime resources are released; it renames the directory aside under that check before deleting, so the published path never holds a partial pack and a stale listing never deletes a replacement. Cleaners in other processes are not detected. Documented in `docs/packs.md`.
+- Make `ContractTests.testQueueLimitAndQueueDeadline` independent of scheduling (#48): the queue-limit and queue-deadline phases are sequenced on the runtime's observed calls instead of sleeps, so the Thread Sanitizer pass no longer reports `timedOut` where `busy` is expected. Test only; no production code changed.
 
 ## 0.2.0-beta.1 — 2026-10-11
 
