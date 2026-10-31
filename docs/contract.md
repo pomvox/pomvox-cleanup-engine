@@ -62,7 +62,8 @@ A `Transcript` is an ordered list of `SpeakerTurn`s (optional speaker label, tex
 See [gap review](integration-gap-review.md) for dispositions and limitations, and the
 [app integration prompt](pomvox-integration-prompt.md) for host responsibilities.
 `PackInstaller` provides local verified installation with exclusive publication and
-APFS cloning where available. `PackSource.validated` reuses a process-local validation
+APFS cloning where available, plus listing with clone-aware sizes and removal that
+refuses a pack an open `Cleaner` in this process holds. `PackSource.validated` reuses a process-local validation
 handle only while file identities remain unchanged. `closeAndWait()` waits for actual
 resource release and is cancellable; `close()` retains its nonblocking semantics.
 `availability` is a snapshot exposing quarantine, not an admission guarantee.

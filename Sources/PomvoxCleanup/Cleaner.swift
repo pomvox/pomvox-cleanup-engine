@@ -26,6 +26,15 @@ public final class Cleaner: Cleaning, Sendable {
                             policy: LocalPolicy = .local) async throws -> Cleaner {
         let start = ContinuousClock.now
         try Task.checkCancellation()
+        let directory = switch source {
+        case .directory(let url): url.standardizedFileURL.resolvingSymlinksInPath()
+        case .validated(let pack): pack.directory
+        }
+        // Held before validation: a concurrent `PackInstaller.remove` either refuses or makes validation fail.
+        // The session's runtime keeps the hold once opened; every earlier exit releases it here.
+        let hold = OpenPacks.shared.hold(directory)
+        var opened = false
+        defer { if !opened { hold.release() } }
         let validation = Task.detached {
             switch source {
             case .directory(let url): return try PackLoader.validate(directory: url)
@@ -44,7 +53,9 @@ public final class Cleaner: Cleaning, Sendable {
             artifactDigest: pack.digest, modelRevision: pack.manifest.modelRevision,
             runtime: runtime.name, route: "local", settings: ["prompt": pack.manifest.prompt,
                 "temperature": "0", "enable_thinking": "false"])
-        let session = try CleanupSession(runtime: backend, provenance: provenance, preparationMS: preparation)
+        let session = try CleanupSession(runtime: HeldRuntime(runtime: backend, hold: hold),
+                                         provenance: provenance, preparationMS: preparation)
+        opened = true
         return Cleaner(pack: pack, session: session, preparationMS: preparation)
     }
 
@@ -80,4 +91,14 @@ public final class Cleaner: Cleaning, Sendable {
     }
 
     public func close() async { await session.close() }
+}
+
+/// Keeps the pack directory marked as held until the runtime's resources are actually released.
+private struct HeldRuntime: CleanupRuntime {
+    let runtime: any CleanupRuntime
+    let hold: PackHold
+    func generate(_ request: CleanupRequest, deadline: ContinuousClock.Instant) async throws -> RuntimeOutput {
+        try await runtime.generate(request, deadline: deadline)
+    }
+    func close() async { await runtime.close(); hold.release() }
 }

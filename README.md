@@ -52,7 +52,7 @@ The baseline requires the exact snapshot recorded in [pack.json](packs/simplewor
 python3 scripts/prepare-local-pack.py /path/to/pinned/snapshot .local/simplewords-v3
 ```
 
-Apps can use the native `PackInstaller.install(snapshot:manifestData:destination:)` with the trusted bundled manifest instead of invoking Python. Install outside cloud-synced folders, keep the pack immutable, and pass the returned handle to `.validated(installedPack)` when opening. Model access is separate from SDK installation: the pinned upstream model currently requires accepting access conditions.
+Apps can use the native `PackInstaller.install(snapshot:manifestData:destination:)` with the trusted bundled manifest instead of invoking Python. Install outside cloud-synced folders, keep the pack immutable, and pass the returned handle to `.validated(installedPack)` when opening. `PackInstaller.installed(at:)` lists the packs under that parent directory with clone-aware sizes, and `PackInstaller.remove(_:)` deletes one unless a `Cleaner` in this process holds it. Model access is separate from SDK installation: the pinned upstream model currently requires accepting access conditions.
 
 The tool copies and verifies the seven pinned artifacts, refuses existing destinations and cleans up failed copies. It never downloads or modifies the source. The upstream model currently has an access gate; reproducible public acquisition and an archived license/notice record remain release requirements. See [installed packs](docs/packs.md).
 

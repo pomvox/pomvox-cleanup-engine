@@ -344,6 +344,106 @@ extension PackTests {
     }
 }
 
+// MARK: - Listing and removal
+
+extension PackTests {
+    /// A fixture snapshot plus an empty pack root; the pack root lives on the same volume so installs clone.
+    private func installRoot() throws -> (source: URL, root: URL, manifest: Data) {
+        let source = try fixture()
+        let root = source.deletingLastPathComponent().appendingPathComponent(UUID().uuidString)
+        return (source, root, try Data(contentsOf: source.appendingPathComponent("pack.json")))
+    }
+
+    func testInstalledListsPublishedPacksWithCloneAwareSizeAndDate() throws {
+        let (source, root, manifest) = try installRoot()
+        defer { try? FileManager.default.removeItem(at: source); try? FileManager.default.removeItem(at: root) }
+        XCTAssertEqual(try PackInstaller.installed(at: root), [])
+        let installed = try PackInstaller.install(snapshot: source, manifestData: manifest, destination: root.appendingPathComponent("test"))
+        // Staging leftovers, directories without a manifest and plain files are not packs.
+        for name in [".pomvox-install-stale", "not-a-pack"] {
+            try FileManager.default.createDirectory(at: root.appendingPathComponent(name), withIntermediateDirectories: false)
+        }
+        try Data("x".utf8).write(to: root.appendingPathComponent("file"))
+        let before = try PackInstaller.installed(at: root)
+        XCTAssertEqual(before.count, 1)
+        guard let pack = before.first else { return }
+        XCTAssertEqual(pack.id, "test"); XCTAssertEqual(pack.version, "1.0.0")
+        XCTAssertEqual(pack.directory, installed.directory)
+        let logical = installed.manifest.artifacts.reduce(manifest.count) { $0 + $1.bytes }
+        XCTAssertGreaterThanOrEqual(pack.allocatedBytes, Int64(logical))
+        XCTAssertLessThan(abs(pack.installedAt.timeIntervalSinceNow), 60)
+        // Artifacts cloned from the snapshot share their blocks with it until it goes away.
+        let probe = root.appendingPathComponent(".clone-probe")
+        let clones = clonefile(source.appendingPathComponent("config.json").path, probe.path, 0) == 0
+        if clones { XCTAssertLessThan(pack.privateBytes, pack.allocatedBytes) }
+        try FileManager.default.removeItem(at: source)
+        try? FileManager.default.removeItem(at: probe)
+        let after = try PackInstaller.installed(at: root)
+        XCTAssertEqual(after.first?.allocatedBytes, pack.allocatedBytes)
+        XCTAssertEqual(after.first?.privateBytes, after.first?.allocatedBytes)
+    }
+
+    func testRemoveRefusesPackHeldByAnOpenCleanerUntilReleased() async throws {
+        let (source, root, manifest) = try installRoot()
+        defer { try? FileManager.default.removeItem(at: source); try? FileManager.default.removeItem(at: root) }
+        for name in ["held", "idle"] {
+            _ = try PackInstaller.install(snapshot: source, manifestData: manifest, destination: root.appendingPathComponent(name))
+        }
+        let listed = try PackInstaller.installed(at: root)
+        let held = try XCTUnwrap(listed.first { $0.directory.lastPathComponent == "held" })
+        let idle = try XCTUnwrap(listed.first { $0.directory.lastPathComponent == "idle" })
+        // A failed open leaves no hold behind.
+        do {
+            _ = try await Cleaner.open(pack: .directory(held.directory), runtime: RuntimeFactory(name: "failure") { _ in
+                throw CleanupError.unavailable("injected")
+            })
+            XCTFail("factory failure must throw")
+        } catch {}
+        let cleaner = try await Cleaner.open(pack: .directory(held.directory), runtime: RuntimeFactory(name: "test") { _ in SetupRuntime() })
+        XCTAssertThrowsError(try PackInstaller.remove(held)) { error in
+            guard case .unavailable? = error as? CleanupError else { return XCTFail("\(error)") }
+        }
+        XCTAssertNoThrow(try PackLoader.validate(directory: held.directory))
+        // The hold is per directory: another installation of the same id is removable.
+        XCTAssertNoThrow(try PackInstaller.remove(idle))
+        try await cleaner.closeAndWait()
+        XCTAssertNoThrow(try PackInstaller.remove(held))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: held.directory.path))
+        XCTAssertThrowsError(try PackInstaller.remove(held))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: root.path), [])
+        // A stale listing never deletes a replacement installed at the same path.
+        _ = try PackInstaller.install(snapshot: source, manifestData: manifest, destination: held.directory)
+        XCTAssertThrowsError(try PackInstaller.remove(held))
+        XCTAssertNoThrow(try PackLoader.validate(directory: held.directory))
+    }
+
+    func testConcurrentRemoveAndInstallOfTheSameIDLeaveNoPartialOrLostPack() async throws {
+        let (source, root, manifest) = try installRoot()
+        defer { try? FileManager.default.removeItem(at: source); try? FileManager.default.removeItem(at: root) }
+        let destination = root.appendingPathComponent("test")
+        for _ in 0..<20 {
+            _ = try PackInstaller.install(snapshot: source, manifestData: manifest, destination: destination)
+            let pack = try XCTUnwrap(try PackInstaller.installed(at: root).first)
+            let outcomes = await withTaskGroup(of: (String, Bool).self) { group in
+                group.addTask { ("remove", (try? PackInstaller.remove(pack)) != nil) }
+                group.addTask {
+                    ("install", (try? PackInstaller.install(snapshot: source, manifestData: manifest, destination: destination)) != nil)
+                }
+                var result: [String: Bool] = [:]
+                for await (name, success) in group { result[name] = success }
+                return result
+            }
+            XCTAssertEqual(outcomes["remove"], true)
+            let exists = FileManager.default.fileExists(atPath: destination.path)
+            // The published path holds either a complete pack from the winning install or nothing.
+            if outcomes["install"] == true { XCTAssertNoThrow(try PackLoader.validate(directory: destination)) }
+            else { XCTAssertFalse(exists) }
+            XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: root.path), exists ? ["test"] : [])
+            if let survivor = try PackInstaller.installed(at: root).first { try PackInstaller.remove(survivor) }
+        }
+    }
+}
+
 // MARK: - Capabilities (schema 2)
 
 extension PackTests {
