@@ -199,6 +199,12 @@ private actor SetupRuntime: CleanupRuntime {
     func state() -> (Int, Int) { (calls, closes) }
 }
 
+extension SetupRuntime: AuxiliaryGenerating {
+    func generateVariants(_ request: VariantRequest, deadline: ContinuousClock.Instant) -> RuntimeOutput {
+        calls += 1; return RuntimeOutput(candidate: "pom box\n")
+    }
+}
+
 extension PackTests {
     func testPublicFacadePreparationProvenanceAndRejectedSettings() async throws {
         let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
@@ -388,6 +394,22 @@ extension PackTests {
         let calls = await runtime.state().0
         XCTAssertEqual(calls, 1)
         await cleaner.close()
+    }
+
+    /// No openable pack declares auxiliary generation yet (#3, option 1): the entry
+    /// point answers `[]` without a generation, even on a runtime that could run one.
+    func testSuggestVariantsIsEmptyWithoutAPackDeclarationAndNeverGenerates() async throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let runtime = SetupRuntime()
+        let cleaner = try await Cleaner.open(pack: .directory(root), runtime: RuntimeFactory(name: "test-runtime") { _ in runtime })
+        XCTAssertFalse(cleaner.capabilities.auxiliaryGeneration)
+        let plain = await cleaner.suggestVariants(for: "Pomvox")
+        let bounded = await cleaner.suggestVariants(for: "Pomvox", limit: 3, deadline: .seconds(1))
+        let generations = await runtime.state().0
+        XCTAssertEqual(plain, []); XCTAssertEqual(bounded, []); XCTAssertEqual(generations, 0)
+        await cleaner.close()
+        let closed = await cleaner.suggestVariants(for: "Pomvox")
+        XCTAssertEqual(closed, [])
     }
 
     func testSchema2NullMemoryMeansNotMeasured() throws {
