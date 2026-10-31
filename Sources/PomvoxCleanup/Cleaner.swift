@@ -53,7 +53,7 @@ public final class Cleaner: Cleaning, Sendable {
             artifactDigest: pack.digest, modelRevision: pack.manifest.modelRevision,
             runtime: runtime.name, route: "local", settings: ["prompt": pack.manifest.prompt,
                 "temperature": "0", "enable_thinking": "false"])
-        let session = try CleanupSession(runtime: HeldRuntime(runtime: backend, hold: hold),
+        let session = try CleanupSession(runtime: HeldRuntime.wrap(backend, hold: hold),
                                          provenance: provenance, preparationMS: preparation)
         opened = true
         return Cleaner(pack: pack, session: session, preparationMS: preparation)
@@ -97,8 +97,25 @@ public final class Cleaner: Cleaning, Sendable {
 private struct HeldRuntime: CleanupRuntime {
     let runtime: any CleanupRuntime
     let hold: PackHold
+    /// The wrapper is `AuxiliaryGenerating` exactly when the runtime is, so `suggestVariants` sees no change.
+    static func wrap(_ runtime: any CleanupRuntime, hold: PackHold) -> any CleanupRuntime {
+        if let auxiliary = runtime as? any AuxiliaryGenerating { return HeldAuxiliaryRuntime(runtime: auxiliary, hold: hold) }
+        return HeldRuntime(runtime: runtime, hold: hold)
+    }
     func generate(_ request: CleanupRequest, deadline: ContinuousClock.Instant) async throws -> RuntimeOutput {
         try await runtime.generate(request, deadline: deadline)
+    }
+    func close() async { await runtime.close(); hold.release() }
+}
+
+private struct HeldAuxiliaryRuntime: AuxiliaryGenerating {
+    let runtime: any AuxiliaryGenerating
+    let hold: PackHold
+    func generate(_ request: CleanupRequest, deadline: ContinuousClock.Instant) async throws -> RuntimeOutput {
+        try await runtime.generate(request, deadline: deadline)
+    }
+    func generateVariants(_ request: VariantRequest, deadline: ContinuousClock.Instant) async throws -> RuntimeOutput {
+        try await runtime.generateVariants(request, deadline: deadline)
     }
     func close() async { await runtime.close(); hold.release() }
 }
