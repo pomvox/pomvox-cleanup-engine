@@ -28,6 +28,22 @@ final class PackTests: XCTestCase, @unchecked Sendable {
         return root
     }
 
+    func testGuardDeclarationCompatibilityReportsActiveRules() throws {
+        for rules in [["pomvox-guards-v0.2.8"], [CleanupLogic.rulesVersion]] {
+            let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+            try mutateManifest(root) { $0["rules"] = rules }
+            let pack = try PackLoader.validate(directory: root)
+            XCTAssertEqual(pack.manifest.rules, rules)
+            XCTAssertEqual(pack.capabilities.guardRules, CleanupLogic.rulesVersion)
+        }
+        for rules in [[], ["pomvox-guards-v0.2.7"], ["pomvox-guards-v0.2.10"],
+                      ["pomvox-guards-v0.2.8", CleanupLogic.rulesVersion]] {
+            let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+            try mutateManifest(root) { $0["rules"] = rules }
+            XCTAssertThrowsError(try PackLoader.validate(directory: root))
+        }
+    }
+
     func testValidAndTamperedArtifact() throws {
         let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let pack = try PackLoader.validate(directory: root)

@@ -74,8 +74,11 @@ resource release and is cancellable; `close()` retains its nonblocking semantics
 
 Completed runtime failures and guard rejections retain valid observed timings and
 warnings. Guard rejections include `rejectedBy:<CleanupRejection.rawValue>`.
-`CleanupLogic.rulesVersion` is checked against the manifest and reported as
-`capabilities.guardRules`, so a host can log which guard set produced a rejection.
+`capabilities.guardRules` reports the active `CleanupLogic.rulesVersion`.
+Pack validation accepts the active rules identity and the previous v0.2.8
+declaration on existing packs. The active rule rejects a candidate that drops
+a standalone trailing “nothing else” restriction. The session returns the
+original transcript on rejection.
 This repository owns the guard specification: `GuardVectorTests` pins every app
 guard vector to its rejection reason, so a change that moves a rejection to a
 different guard fails. Optional timing fields

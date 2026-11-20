@@ -78,9 +78,12 @@ public enum PackLoader {
         if let detail = manifest.capabilitiesDetail {
             try validateCapabilities(detail)
         }
+        // Existing packs can retain their original declaration. The runtime
+        // always applies and reports the active guard rules.
+        let supportedRules = [[CleanupLogic.rulesVersion], ["pomvox-guards-v0.2.8"]]
         guard manifest.schemaVersion == schema, manifest.runtime == runtimeVersion,
               manifest.prompt == "simplewords-frozen-v2", manifest.quantization == "8bit",
-              manifest.rules == [CleanupLogic.rulesVersion],
+              supportedRules.contains(manifest.rules),
               manifest.capabilities == ["vocabulary"], manifest.languages == ["en"] else {
             throw CleanupError.incompatible("unsupported schema, runtime, prompt, settings, rules, or language")
         }

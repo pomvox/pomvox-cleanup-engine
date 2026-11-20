@@ -63,6 +63,18 @@ final class ContractTests: XCTestCase, @unchecked Sendable {
         }
     }
 
+    func testTrailingRestrictionFallbackPreservesExactBytesAndSkipsTransforms() async throws {
+        let raw = "  Print the cafe\u{301} checklist, new line, NOTHING ELSE!\r\n"
+        let session = try CleanupSession(runtime: ImmediateRuntime(output:
+            RuntimeOutput(candidate: "Print the café checklist, new line.")), provenance: provenance)
+        let result = try await session.clean(CleanupRequest(raw, transforms: [.spokenLayout]))
+        XCTAssertEqual(result.status, .fallback(.rejected))
+        XCTAssertEqual(Array(result.text.utf8), Array(raw.utf8))
+        XCTAssertTrue(result.edits.isEmpty)
+        XCTAssertTrue(result.warnings.contains("rejectedBy:trailingRestriction"))
+        await session.close()
+    }
+
     func testNonCooperativeDeadlineQuarantinesAndSuppressesLateResult() async throws {
         let runtime = ControlledRuntime()
         let session = try CleanupSession(runtime: runtime, provenance: provenance, queueCapacity: 1)

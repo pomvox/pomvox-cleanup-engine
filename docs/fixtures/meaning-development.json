@@ -1,0 +1,98 @@
+[
+  {
+    "id": "condition-commitment",
+    "split": "synthetic-development",
+    "raw": "We will work weekends for now. When the grant is approved, we will work full-time.",
+    "vocabulary": [],
+    "required": [
+      "weekends",
+      "when the grant is approved",
+      "full.time"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "final-number",
+    "split": "synthetic-development",
+    "raw": "Review the hundred tickets, sorry, the ten tickets, then email the summary.",
+    "vocabulary": [],
+    "required": [
+      "\\b(?:ten|10) tickets",
+      "email the summary"
+    ],
+    "forbidden": [
+      "\\b(?:hundred|100) tickets"
+    ]
+  },
+  {
+    "id": "original-actor",
+    "split": "synthetic-development",
+    "raw": "Can you, actually can I open the spreadsheet in a separate window?",
+    "vocabulary": [],
+    "required": [
+      "can I",
+      "separate window"
+    ],
+    "forbidden": [
+      "can you"
+    ]
+  },
+  {
+    "id": "successful-correction",
+    "split": "synthetic-development",
+    "raw": "Let us meet on Monday, no, Wednesday at noon.",
+    "vocabulary": [],
+    "required": [
+      "Wednesday",
+      "noon"
+    ],
+    "forbidden": [
+      "Monday"
+    ]
+  },
+  {
+    "id": "additive-quantity",
+    "split": "synthetic-development",
+    "raw": "There are twelve red folders and eight blue folders.",
+    "vocabulary": [],
+    "required": [
+      "(?:twelve|12) red",
+      "(?:eight|8) blue"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "additive-actor",
+    "split": "synthetic-development",
+    "raw": "I will draft the memo and you will approve it.",
+    "vocabulary": [],
+    "required": [
+      "I will draft",
+      "you will approve"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "additive-condition",
+    "split": "synthetic-development",
+    "raw": "If the room is available, reserve it. Otherwise, book the studio.",
+    "vocabulary": [],
+    "required": [
+      "if the room is available",
+      "reserve it",
+      "otherwise",
+      "book the studio"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "trailing-restriction",
+    "split": "synthetic-development",
+    "raw": "Print the checklist, okay, nothing else.",
+    "vocabulary": [],
+    "required": [
+      "nothing else"
+    ],
+    "forbidden": []
+  }
+]
