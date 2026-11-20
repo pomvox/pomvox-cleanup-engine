@@ -18,11 +18,11 @@ public struct ChatMessage: Equatable, Sendable {
 public enum CleanupRejection: String, Error, Codable, Sendable {
     case emptyOutput, thinkTags, rolePrefix, upperLength, lowerLengthRatio
     case questionPreservation, shortWordOverlap, echoWithCommentary, markdownHeader
-    case listNotInvited, listInventsContent
+    case listNotInvited, listInventsContent, trailingRestriction
 }
 
 public enum CleanupLogic {
-    public static let rulesVersion = "pomvox-guards-v0.2.8"
+    public static let rulesVersion = "pomvox-guards-v0.2.9"
     public static let styles = ["light", "polish"]
 
     // The prompt text is byte-for-byte cleanup.py's (_SYSTEM/_LIGHT_EXTRA/
@@ -290,7 +290,22 @@ public enum CleanupLogic {
             if !rawInvitesList(raw) { return .failure(.listNotInvited) }
             if !listPreservesContent(raw: raw, lines: lines) { return .failure(.listInventsContent) }
         }
+        if hasTrailingRestriction(raw), !hasTrailingRestriction(out) {
+            return .failure(.trailingRestriction)
+        }
         return .success(out)
+    }
+
+    // A standalone trailing "nothing else" restricts the preceding request.
+    // Require a clause boundary or a conjunction, and leave in-sentence uses
+    // and later corrections to the existing rules.
+    private static let trailingRestriction = try! NSRegularExpression(
+        pattern: #"(?:[,;:—.!?]\s*|\band\s+)nothing\s+else[.!?…]*\s*\z"#,
+        options: [.caseInsensitive])
+
+    private static func hasTrailingRestriction(_ text: String) -> Bool {
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return trailingRestriction.firstMatch(in: text, range: range) != nil
     }
 
     /// Spoken cues that make a list a legitimate rendering of the transcript.

@@ -38,6 +38,9 @@ final class GuardVectorTests: XCTestCase {
         + "list, like one, two, three. This is with the R C build, by the way."
 
     static let vectors: [Vector] = [
+        Vector(source: "reject_dropped_trailing_restriction",
+               raw: "Print the checklist, okay, nothing else.", cleaned: "Print the checklist.",
+               expected: .rejects(.trailingRestriction)),
         // Output shape.
         Vector(source: "accept_normal_output", raw: raw,
                cleaned: "I think we should ship it tomorrow.",
@@ -161,7 +164,7 @@ final class GuardVectorTests: XCTestCase {
         }
         let all: [CleanupRejection] = [.emptyOutput, .thinkTags, .rolePrefix, .upperLength, .lowerLengthRatio,
             .questionPreservation, .shortWordOverlap, .echoWithCommentary, .markdownHeader,
-            .listNotInvited, .listInventsContent]
+            .listNotInvited, .listInventsContent, .trailingRestriction]
         XCTAssertEqual(reached, Set(all.map(\.rawValue)))
     }
 
@@ -169,6 +172,44 @@ final class GuardVectorTests: XCTestCase {
     func testTheEchoVectorIsInsideTheUpperLengthBound() {
         let echo = Self.vectors.first { $0.source == "reject_echoed_input_with_commentary" }!
         XCTAssertLessThanOrEqual(echo.cleaned.count, 2 * echo.raw.count + 20)
+    }
+
+    func testExplicitTrailingRestrictionCannotBeDropped() {
+        let raw = "Print the checklist, okay, nothing else."
+        XCTAssertNil(CleanupLogic.acceptOutput(raw: raw, cleaned: "Print the checklist."))
+        XCTAssertEqual(CleanupLogic.acceptOutput(raw: raw, cleaned: "Print the checklist and nothing else."),
+                       "Print the checklist and nothing else.")
+        XCTAssertEqual(CleanupLogic.acceptOutput(raw: raw, cleaned: "Print the checklist. Nothing else."),
+                       "Print the checklist. Nothing else.")
+
+        // An ordinary use of the words is outside this narrow guard.
+        XCTAssertEqual(CleanupLogic.acceptOutput(raw: "There is nothing else to print.",
+                                                 cleaned: "There's nothing else to print."),
+                       "There's nothing else to print.")
+        XCTAssertEqual(CleanupLogic.acceptOutput(raw: "Print the checklist, nothing else. Actually, print the map too.",
+                                                 cleaned: "Print the checklist and the map."),
+                       "Print the checklist and the map.")
+    }
+
+    func testTrailingRestrictionBoundariesAndAcceptableCleanups() {
+        for suffix in [", nothing else", "; NOTHING ELSE!", ": nothing else…", "—nothing else.",
+                       ". Nothing else!", " and nothing else."] {
+            let raw = "Print the checklist" + suffix
+            XCTAssertEqual(CleanupLogic.evaluateOutput(raw: raw, cleaned: "Print the checklist."),
+                           .failure(.trailingRestriction))
+            XCTAssertEqual(CleanupLogic.acceptOutput(raw: raw, cleaned: "Print the checklist, nothing else."),
+                           "Print the checklist, nothing else.")
+        }
+        let accepted = [
+            ("There is nothing else to print.", "There's nothing else to print."),
+            ("Print the checklist, nothing else. Actually, print the map too.", "Print the checklist and the map."),
+            ("Print the checklist and the map.", "Print the checklist and map."),
+            ("Print ten copies, sorry, twelve copies.", "Print twelve copies."),
+            ("I will print the map and you will check it.", "I will print the map, and you will check it."),
+        ]
+        for (raw, candidate) in accepted {
+            XCTAssertEqual(CleanupLogic.acceptOutput(raw: raw, cleaned: candidate), candidate)
+        }
     }
 
     // MARK: - Length floor selection (`min_ratio`)
@@ -230,7 +271,7 @@ final class GuardVectorTests: XCTestCase {
     /// The guard set a host logs next to a rejection. Changing any guard above
     /// must change this string; a pack manifest names it in `rules`.
     func testGuardRulesIdentityIsExposedThroughTheCapabilityQuery() {
-        XCTAssertEqual(CleanupLogic.rulesVersion, "pomvox-guards-v0.2.8")
+        XCTAssertEqual(CleanupLogic.rulesVersion, "pomvox-guards-v0.2.9")
         XCTAssertEqual(PackCapabilities.frozenBaseline.guardRules, CleanupLogic.rulesVersion)
         let custom = PackCapabilities(styles: [], speculativeSwitch: false, auxiliaryGeneration: false,
                                       minResidentMemoryBytes: nil, vocabulary: .request)
